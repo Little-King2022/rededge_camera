@@ -1,10 +1,15 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import Antd from 'ant-design-vue'
+import Antd, { message } from 'ant-design-vue'
 import App from './App.vue'
 import router from './router'
 import i18n from './i18n'
 import 'ant-design-vue/dist/reset.css'
+
+// 配置 message 从导航栏下方弹出（导航栏高度 72px + 间距 8px）
+message.config({
+	top: '80px'
+})
 
 if (import.meta.env.DEV) {
 	if (!('dragEvent' in globalThis)) {
