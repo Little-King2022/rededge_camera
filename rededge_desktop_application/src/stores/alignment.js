@@ -12,6 +12,7 @@ export const useAlignmentStore = defineStore('alignment', () => {
   const isComputing = ref(false)
   const currentCameraInfo = ref(null)
   const computeProgress = ref(null)
+  const warpMatrixJobs = ref([])
 
   // Python service state
   const pythonServiceStatus = ref({
@@ -144,31 +145,112 @@ export const useAlignmentStore = defineStore('alignment', () => {
    */
   async function computeWarpMatrices(imagePaths, options = {}) {
     try {
-      isComputing.value = true
-      computeProgress.value = { status: 'computing', message: 'Computing warp matrices...' }
+      computeProgress.value = { status: 'pending', percent: 0, message: 'Queueing alignment job...' }
       error.value = null
 
       // 转换为普通数组和普通对象以避免IPC序列化问题
       const plainPaths = Array.isArray(imagePaths) ? Array.from(imagePaths) : [imagePaths]
       const plainOptions = JSON.parse(JSON.stringify(options))
 
-      const result = await window.electronAPI.alignment.computeWarpMatrices(plainPaths, plainOptions)
+      const startResult = await window.electronAPI.alignment.computeWarpMatrices(plainPaths, plainOptions)
 
-      if (result.success) {
-        await loadWarpMatrices()
-        computeProgress.value = { status: 'completed', message: 'Warp matrices computed successfully' }
-      } else {
-        computeProgress.value = { status: 'failed', message: result.error }
+      if (!startResult.success || !startResult.job_id) {
+        computeProgress.value = { status: 'failed', percent: 100, message: startResult.error || 'Failed to start job' }
+        return startResult
       }
 
-      return result
+      return await pollWarpMatrixJob(startResult.job_id)
     } catch (e) {
       console.error('[AlignmentStore] Failed to compute warp matrices:', e)
       error.value = e.message
-      computeProgress.value = { status: 'failed', message: e.message }
+      computeProgress.value = { status: 'failed', percent: 100, message: e.message }
       return { success: false, error: e.message }
+    }
+  }
+
+  async function pollWarpMatrixJob(jobId) {
+    const shouldSetComputing = !isComputing.value
+    if (shouldSetComputing) {
+      isComputing.value = true
+    }
+
+    let statusResult = null
+
+    try {
+      while (true) {
+        statusResult = await window.electronAPI.alignment.getComputeWarpMatricesStatus(jobId)
+        if (!statusResult.success) {
+          const errorMessage = statusResult.error || 'Failed to get alignment status'
+          computeProgress.value = { status: 'failed', percent: 100, message: errorMessage }
+          await loadWarpMatrixJobs(false)
+          return { success: false, error: errorMessage }
+        }
+
+        computeProgress.value = {
+          status: statusResult.status,
+          percent: typeof statusResult.progress === 'number' ? statusResult.progress : 0,
+          message: statusResult.message || statusResult.status
+        }
+
+        if (['completed', 'failed'].includes(statusResult.status)) {
+          break
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
+
+      if (statusResult.status === 'completed' && statusResult.result) {
+        if (statusResult.record_id) {
+          statusResult.result.record_id = statusResult.record_id
+        }
+        await loadWarpMatrices()
+        await loadWarpMatrixJobs(false)
+        computeProgress.value = { status: 'completed', percent: 100, message: 'Warp matrices computed successfully' }
+        return statusResult.result
+      }
+
+      const errorMessage = statusResult.error_message || 'Alignment job failed'
+      computeProgress.value = { status: 'failed', percent: 100, message: errorMessage }
+      await loadWarpMatrixJobs(false)
+      return { success: false, error: errorMessage }
     } finally {
-      isComputing.value = false
+      if (shouldSetComputing) {
+        isComputing.value = false
+      }
+    }
+  }
+
+  async function loadWarpMatrixJobs(resume = true) {
+    try {
+      warpMatrixJobs.value = await window.electronAPI.alignment.getWarpMatrixJobs()
+    } catch (e) {
+      console.error('[AlignmentStore] Failed to load warp matrix jobs:', e)
+      return
+    }
+
+    if (!resume || isComputing.value) {
+      return
+    }
+
+    const activeJob = warpMatrixJobs.value.find(job => job.status === 'pending' || job.status === 'running')
+    if (activeJob) {
+      computeProgress.value = {
+        status: activeJob.status,
+        percent: typeof activeJob.progress === 'number' ? activeJob.progress : 0,
+        message: activeJob.message || activeJob.status
+      }
+      await pollWarpMatrixJob(activeJob.job_id)
+    }
+  }
+
+  async function deleteWarpMatrixJob(jobId) {
+    try {
+      await window.electronAPI.alignment.deleteWarpMatrixJob(jobId)
+      await loadWarpMatrixJobs(false)
+      return { success: true }
+    } catch (e) {
+      console.error('[AlignmentStore] Failed to delete warp matrix job:', e)
+      return { success: false, error: e.message }
     }
   }
 
@@ -326,6 +408,7 @@ export const useAlignmentStore = defineStore('alignment', () => {
     isComputing,
     currentCameraInfo,
     computeProgress,
+    warpMatrixJobs,
     pythonServiceStatus,
 
     // Computed
@@ -341,6 +424,8 @@ export const useAlignmentStore = defineStore('alignment', () => {
     selectImages,
     getCameraInfo,
     computeWarpMatrices,
+    loadWarpMatrixJobs,
+    deleteWarpMatrixJob,
     setActiveMatrix,
     deleteMatrix,
     alignSingle,

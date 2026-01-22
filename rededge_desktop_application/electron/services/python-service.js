@@ -3,8 +3,11 @@
  * 管理Python Flask服务的生命周期
  */
 import { spawn, exec } from 'child_process'
+import http from 'http'
+import fs from 'fs'
 import path from 'path'
 import { app } from 'electron'
+import { fileURLToPath } from 'url'
 
 const PYTHON_SERVICE_PORT = 5000
 const HEALTH_CHECK_INTERVAL = 5000
@@ -28,8 +31,80 @@ class PythonServiceManager {
       return path.join(process.resourcesPath, 'python_service')
     } else {
       // 开发环境：使用源码目录
-      return path.join(app.getAppPath(), '..', '..', 'python_service')
+      const envOverride = process.env.REDEDGE_PYTHON_SERVICE_PATH
+      if (envOverride && fs.existsSync(envOverride)) {
+        return envOverride
+      }
+
+      const appPathCandidate = path.resolve(app.getAppPath(), '..', '..', 'python_service')
+      if (fs.existsSync(appPathCandidate)) {
+        return appPathCandidate
+      }
+
+      const cwd = process.cwd()
+      const cwdSibling = path.resolve(cwd, '..', 'python_service')
+      if (fs.existsSync(cwdSibling)) {
+        return cwdSibling
+      }
+
+      const cwdChild = path.resolve(cwd, 'python_service')
+      if (fs.existsSync(cwdChild)) {
+        return cwdChild
+      }
+
+      const currentDir = path.dirname(fileURLToPath(import.meta.url))
+      const relativeCandidate = path.resolve(currentDir, '..', '..', '..', 'python_service')
+      if (fs.existsSync(relativeCandidate)) {
+        return relativeCandidate
+      }
+
+      return appPathCandidate
     }
+  }
+
+  /**
+   * 获取Conda路径
+   */
+  getCondaPath() {
+    const envCandidates = [
+      process.env.REDEDGE_CONDA_EXE,
+      process.env.CONDA_EXE,
+      process.env.CONDA
+    ]
+
+    for (const candidate of envCandidates) {
+      if (candidate && fs.existsSync(candidate)) {
+        return candidate
+      }
+    }
+
+    const condaFromPath = this.findExecutableOnPath(
+      process.platform === 'win32'
+        ? ['conda.exe', 'conda.bat', 'conda.cmd', 'conda']
+        : ['conda']
+    )
+    if (condaFromPath) {
+      return condaFromPath
+    }
+
+    if (process.platform === 'win32') {
+      // Windows下常见的conda安装路径
+      const possiblePaths = [
+        'D:\\anaconda3\\Scripts\\conda.exe',
+        'C:\\ProgramData\\Anaconda3\\Scripts\\conda.exe',
+        'C:\\Users\\' + process.env.USERNAME + '\\anaconda3\\Scripts\\conda.exe',
+        'C:\\Users\\' + process.env.USERNAME + '\\miniconda3\\Scripts\\conda.exe'
+      ]
+
+      // 优先使用找到的路径
+      for (const condaPath of possiblePaths) {
+        if (fs.existsSync(condaPath)) {
+          return condaPath
+        }
+      }
+    }
+
+    return null
   }
 
   /**
@@ -45,6 +120,10 @@ class PythonServiceManager {
         return path.join(this.getPythonServicePath(), 'dist', 'app', 'app')
       }
     } else {
+      const override = process.env.REDEDGE_PYTHON_EXE || process.env.PYTHON_EXE
+      if (override) {
+        return override
+      }
       // 开发环境：使用系统Python
       return process.platform === 'win32' ? 'python' : 'python3'
     }
@@ -64,6 +143,9 @@ class PythonServiceManager {
     try {
       const servicePath = this.getPythonServicePath()
       const pythonExe = this.getPythonExecutable()
+      if (!fs.existsSync(servicePath)) {
+        console.warn(`[PythonService] Service path not found: ${servicePath}`)
+      }
 
       if (app.isPackaged) {
         // 生产环境：直接运行可执行文件
@@ -76,27 +158,55 @@ class PythonServiceManager {
           stdio: ['ignore', 'pipe', 'pipe']
         })
       } else {
-        // 开发环境：运行Python脚本
+        // 开发环境：使用conda环境运行Python脚本
         const appPath = path.join(servicePath, 'app.py')
-        this.process = spawn(pythonExe, [appPath], {
-          cwd: servicePath,
-          env: {
-            ...process.env,
-            PYTHON_SERVICE_PORT: String(PYTHON_SERVICE_PORT),
-            FLASK_DEBUG: 'false'
-          },
-          stdio: ['ignore', 'pipe', 'pipe']
-        })
+        const condaPath = this.getCondaPath()
+        const condaEnv = process.env.REDEDGE_CONDA_ENV || 'micasense'
+
+        if (condaPath) {
+          const condaLower = condaPath.toLowerCase()
+          const needsShell = condaLower.endsWith('.bat') || condaLower.endsWith('.cmd')
+          console.log(`[PythonService] Using conda: ${condaPath} (env: ${condaEnv})`)
+
+          // 使用 conda run 命令（跨平台兼容）
+          this.process = spawn(condaPath, ['run', '-n', condaEnv, '--no-capture-output', 'python', appPath], {
+            cwd: servicePath,
+            env: {
+              ...process.env,
+              PYTHON_SERVICE_PORT: String(PYTHON_SERVICE_PORT),
+              FLASK_DEBUG: 'false'
+            },
+            stdio: ['ignore', 'pipe', 'pipe'],
+            windowsHide: true,
+            shell: needsShell
+          })
+        } else {
+          console.warn('[PythonService] Conda not found, falling back to Python:', pythonExe)
+          this.process = spawn(pythonExe, [appPath], {
+            cwd: servicePath,
+            env: {
+              ...process.env,
+              PYTHON_SERVICE_PORT: String(PYTHON_SERVICE_PORT),
+              FLASK_DEBUG: 'false'
+            },
+            stdio: ['ignore', 'pipe', 'pipe'],
+            windowsHide: true
+          })
+        }
       }
 
       // 监听输出
-      this.process.stdout.on('data', (data) => {
-        console.log(`[PythonService] ${data.toString().trim()}`)
-      })
+      if (this.process.stdout) {
+        this.process.stdout.on('data', (data) => {
+          console.log(`[PythonService] ${data.toString().trim()}`)
+        })
+      }
 
-      this.process.stderr.on('data', (data) => {
-        console.error(`[PythonService] ${data.toString().trim()}`)
-      })
+      if (this.process.stderr) {
+        this.process.stderr.on('data', (data) => {
+          console.error(`[PythonService] ${data.toString().trim()}`)
+        })
+      }
 
       this.process.on('error', (err) => {
         console.error('[PythonService] Process error:', err)
@@ -158,11 +268,13 @@ class PythonServiceManager {
     if (this.process) {
       if (process.platform === 'win32') {
         // Windows需要特殊处理
-        exec(`taskkill /pid ${this.process.pid} /T /F`, (err) => {
-          if (err) {
-            console.error('[PythonService] Failed to kill process:', err)
-          }
-        })
+        if (this.process.pid) {
+          exec(`taskkill /pid ${this.process.pid} /T /F`, (err) => {
+            if (err) {
+              console.error('[PythonService] Failed to kill process:', err)
+            }
+          })
+        }
       } else {
         this.process.kill('SIGTERM')
       }
@@ -178,16 +290,12 @@ class PythonServiceManager {
    */
   async checkHealth() {
     try {
-      const response = await fetch(`${this.baseUrl}/api/health`, {
+      const data = await this.request('/api/health', {
+        allowWhenStopped: true,
         timeout: 2000
       })
-
-      if (response.ok) {
-        const data = await response.json()
-        this.isRunning = true
-        return data.status === 'ok'
-      }
-      return false
+      this.isRunning = true
+      return data.status === 'ok'
     } catch (error) {
       return false
     }
@@ -233,36 +341,106 @@ class PythonServiceManager {
   }
 
   /**
+   * Find an executable in PATH.
+   */
+  findExecutableOnPath(names) {
+    const pathValue = process.env.PATH || ''
+    if (!pathValue) {
+      return null
+    }
+
+    const dirs = pathValue.split(path.delimiter)
+    for (const dir of dirs) {
+      if (!dir) {
+        continue
+      }
+      const normalizedDir = dir.replace(/^"(.*)"$/, '$1')
+      for (const name of names) {
+        const candidate = path.join(normalizedDir, name)
+        if (fs.existsSync(candidate)) {
+          return candidate
+        }
+      }
+    }
+
+    return null
+  }
+
+  /**
    * 发送HTTP请求到Python服务
    */
   async request(endpoint, options = {}) {
-    if (!this.isRunning) {
+    const allowWhenStopped = options.allowWhenStopped === true
+    if (!allowWhenStopped && !this.isRunning) {
       throw new Error('Python service is not running')
     }
 
-    const url = `${this.baseUrl}${endpoint}`
+    const url = new URL(endpoint, this.baseUrl)
+    const method = options.method || 'GET'
+    const timeoutMs = options.timeout || 60000
 
-    const fetchOptions = {
-      method: options.method || 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-      },
-      timeout: options.timeout || 60000
+    const headers = {
+      'Content-Type': 'application/json',
+      ...options.headers
     }
 
+    let bodyPayload = null
     if (options.body) {
-      fetchOptions.body = JSON.stringify(options.body)
+      bodyPayload = JSON.stringify(options.body)
+      if (!headers['Content-Length']) {
+        headers['Content-Length'] = Buffer.byteLength(bodyPayload)
+      }
     }
 
-    const response = await fetch(url, fetchOptions)
+    return new Promise((resolve, reject) => {
+      const req = http.request(url, { method, headers }, (res) => {
+        const chunks = []
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`Python service error: ${response.status} - ${errorText}`)
-    }
+        res.on('data', (chunk) => {
+          chunks.push(chunk)
+        })
 
-    return response.json()
+        res.on('end', () => {
+          const buffer = Buffer.concat(chunks)
+          const text = buffer.toString()
+
+          if (res.statusCode < 200 || res.statusCode >= 300) {
+            const error = new Error(`Python service error: ${res.statusCode} - ${text}`)
+            error.statusCode = res.statusCode
+            return reject(error)
+          }
+
+          if (!text) {
+            return resolve({})
+          }
+
+          try {
+            return resolve(JSON.parse(text))
+          } catch (err) {
+            return reject(new Error(`Failed to parse JSON response: ${err.message}`))
+          }
+        })
+      })
+
+      req.setTimeout(timeoutMs)
+
+      req.on('timeout', () => {
+        req.destroy(new Error(`Request timeout after ${timeoutMs}ms`))
+      })
+
+      req.on('error', (err) => {
+        if (err && (err.code === 'ECONNREFUSED' || err.code === 'ECONNRESET')) {
+          this.isRunning = false
+        }
+        reject(err)
+      })
+
+      if (bodyPayload) {
+        req.write(bodyPayload)
+      }
+
+      req.end()
+    })
   }
 
   // API 便捷方法
@@ -322,7 +500,34 @@ class PythonServiceManager {
         reference_band: options.referenceBand || 1,
         output_path: options.outputPath
       },
-      timeout: 120000 // 配准可能需要较长时间
+      timeout: 300000 // Alignment can take several minutes on large captures.
+    })
+  }
+
+  /**
+   * 异步计算配准矩阵
+   */
+  async startComputeWarpMatrices(imagePaths, options = {}) {
+    return this.request('/api/alignment/compute-warp-matrices-async', {
+      method: 'POST',
+      body: {
+        image_paths: imagePaths,
+        method: options.method || 'opencv',
+        reference_band: options.referenceBand || 1,
+        output_path: options.outputPath,
+        max_iterations: options.maxIterations,
+        pyramid_levels: options.pyramidLevels
+      },
+      timeout: 10000
+    })
+  }
+
+  /**
+   * 获取异步配准任务状态
+   */
+  async getComputeWarpMatricesStatus(jobId) {
+    return this.request(`/api/alignment/compute-warp-matrices-status/${jobId}`, {
+      timeout: 10000
     })
   }
 
@@ -380,16 +585,6 @@ class PythonServiceManager {
     return this.request('/api/alignment/get-camera-info', {
       method: 'POST',
       body: { image_paths: imagePaths }
-    })
-  }
-
-  /**
-   * 检查TIF文件波段数
-   */
-  async checkTifBands(filePath) {
-    return this.request('/api/alignment/check-tif-bands', {
-      method: 'POST',
-      body: { file_path: filePath }
     })
   }
 

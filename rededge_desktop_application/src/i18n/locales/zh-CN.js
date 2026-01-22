@@ -1,4 +1,4 @@
-export default {
+﻿export default {
   app: {
     title: 'RedEdge监测终端',
     windowControls: {
@@ -85,7 +85,7 @@ export default {
     },
     form: {
       nameLabel: '相机配置名称',
-      namePlaceholder: '例如：田间相机 1',
+      namePlaceholder: '例如：田间相机1',
       protocolLabel: '协议',
       hostLabel: '主机 / IP 地址',
       hostPlaceholder: '例如：1.1.1.1',
@@ -112,10 +112,11 @@ export default {
     start: '开始预览',
     stop: '停止预览',
     noActiveTitle: '没有激活的相机配置',
-    noActiveDesc: '请先在连接页激活相机配置。',
+    noActiveDesc: '请先在连接页面激活相机配置。',
     settingsTitle: '设置',
-    refreshRate: '刷新率 (Hz)',
+    refreshRate: '刷新频率 (Hz)',
     statsTitle: '预览统计',
+    bandvisualization_title: '波段可视化',
     statusLabel: '状态',
     currentRate: '当前速率',
     frameTimestamp: '帧时间',
@@ -126,13 +127,12 @@ export default {
     statusStopped: '已停止',
     errorTitle: '预览错误',
     retry: '重试',
-    empty: '暂无预览图像。请先点击“开始预览”',
+    empty: '暂无预览图像，点击“开始预览”启动。',
     loading: '正在加载预览...',
     imageAlt: '相机预览',
     messages: {
       noActiveProfile: '未激活相机配置'
-    },
-    bandvisualization_title: '相机波段图'
+    }
   },
   capture: {
     manualTitle: '手动拍照',
@@ -153,7 +153,7 @@ export default {
     stopTimer: '停止定时',
     timerRunning: '定时运行中',
     timerRunningDesc: '每 {interval} {unit} 拍照一次',
-    recentTitle: '最近拍照列表',
+    recentTitle: '最近拍照',
     selectAll: '全选',
     unselectAll: '取消全选',
     saveSelected: '保存已选',
@@ -161,9 +161,9 @@ export default {
     noRecent: '暂无拍照记录',
     item: {
       captureIdTitle: 'ID：{id}',
-      description: '拍照类型：{type}\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0拍照状态：{status}\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0拍照时间：{time}'
+      description: '类型：{type}\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0状态：{status}\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0时间：{time}'
     },
-    bandName: '波段{index}\u00A0\u00A0{name}',
+    bandName: '波段 {index}\u00A0\u00A0{name}',
     bandPreviewAlt: '波段 {index} 预览',
     type: {
       manual: '手动'
@@ -238,7 +238,7 @@ export default {
     bandInfo: '相机波段信息',
     bandTitle: '波段 {key}：{name}',
     bandType: '类型',
-    bandCenter: '中心波长',
+    bandCenter: '中心',
     bandBandwidth: '带宽',
     bandResolution: '分辨率',
     bandFocalLength: '焦距',
@@ -257,7 +257,7 @@ export default {
     downloadSelected: '下载已选（{count}）',
     deleteSelected: '删除已选（{count}）',
     confirmDeleteSelected: '删除所选项目？',
-    formatSdTitle: '格式化 SD 卡？这将删除所有数据！',
+    formatSdTitle: '格式化 SD 卡？这将清空所有数据！',
     formatSdButton: '格式化 SD 卡',
     noActiveProfile: '未激活相机配置',
     deleting: '正在删除 {completed}/{total}',
@@ -270,8 +270,8 @@ export default {
     },
     download: '下载',
     deleteFile: '删除',
-    confirmDeleteFolder: '删除此文件夹及其内容？',
-    confirmDeleteFile: '删除此文件？',
+    confirmDeleteFolder: '删除该文件夹及其内容？',
+    confirmDeleteFile: '删除该文件？',
     downloadQueue: '下载队列',
     openDownloadFolder: '打开下载目录',
     clearCompleted: '清除已完成',
@@ -290,8 +290,8 @@ export default {
     formatModal: {
       title: '⚠️ 格式化 SD 卡 - 高危操作',
       okText: '格式化',
-      alertTitle: '此操作将清除 SD 卡上的所有数据！',
-      alertDesc: '该操作无法撤销，所有照片和数据将被永久删除。',
+      alertTitle: '此操作将清空 SD 卡上的所有数据！',
+      alertDesc: '该操作无法撤销，所有照片和数据将永久删除。',
       confirmLabel: '输入 "ERASE" 以确认',
       placeholder: 'ERASE'
     },
@@ -328,18 +328,18 @@ export default {
       downloadTitle: '下载设置',
       downloadDir: '下载目录',
       downloadDirPlaceholder: '默认：Downloads/RedEdgeDownloads',
-      downloadDirExtra: '留空则使用系统默认下载目录',
+      downloadDirExtra: '留空使用系统默认下载目录',
       concurrent: '并发下载（1-5）',
       concurrentExtra: '默认：1',
       previewTitle: '预览设置',
-      previewRate: '预览刷新率 (Hz)',
-      previewExtra: '默认：0.5 Hz（每2秒刷新一次）',
+      previewRate: '预览刷新频率 (Hz)',
+      previewExtra: '默认：0.5 Hz（每 2 秒 1 帧）',
       statusTitle: '状态监控设置',
-      statusRate: '状态刷新率（秒）',
+      statusRate: '状态刷新频率（秒）',
       statusExtra: '默认：3 秒',
       loggingTitle: '日志设置',
       enableLogging: '启用日志',
-      loggingExtra: '开启详细日志用于排查问题',
+      loggingExtra: '启用详细日志用于排查问题',
       languageTitle: '语言',
       languageLabel: '界面语言'
     },
@@ -352,12 +352,12 @@ export default {
       proxyExtra: '为所有相机 API 请求使用 HTTP/HTTPS 代理',
       proxyUrl: '相机 API 代理地址',
       proxyPlaceholder: '请输入有效的 HTTP/HTTPS 代理地址',
-      proxyUrlExtra: '支持 http/https 代理，例如：“{example}”',
+      proxyUrlExtra: '支持 http/https 代理，例如：{example}',
       proxyUrlInvalid: '请输入有效的 HTTP/HTTPS 代理地址'
     },
     license: {
       currentStatus: '当前状态',
-      trialDays: '剩余试用天数',
+      trialDays: '试用剩余天数',
       licenseInfo: '授权信息',
       licenseStatus: '授权状态',
       expiryDate: '到期时间',
@@ -366,10 +366,10 @@ export default {
       org: '组织',
       contact: '联系方式',
       activateTitle: '激活授权',
-      trialAlert: '试用期剩余：{days} 天',
-      trialDesc: '请输入激活码解锁完整版本',
+      trialAlert: '试用剩余：{days} 天',
+      trialDesc: '请输入激活码解锁完整版',
       expiredTitle: '授权已过期',
-      expiredDesc: '请输入有效激活码以继续使用软件',
+      expiredDesc: '请输入有效激活码继续使用软件',
       activationCode: '激活码',
       activationPlaceholder: '请输入激活码',
       activateButton: '激活',
@@ -389,7 +389,7 @@ export default {
       companyAddressLabel: '公司地址：',
       companyAddressLine1: '江苏省南京市溧水区白马镇茶兴路9号',
       companyAddressLine2: '江苏省南京市玄武区童卫路4号南京农业生物高新技术创业中心2号楼2楼',
-      companyWebsiteLabel: '官方网址：'
+      companyWebsiteLabel: '官方网站：'
     },
     messages: {
       loadFailed: '加载设置失败：{error}',
@@ -409,9 +409,9 @@ export default {
       unknown: '未知状态'
     },
     statusDesc: {
-      activated: '您的授权有效且可用',
-      expired: '您的授权已过期，请激活后继续使用。',
-      trial: '您正在使用试用版，还剩 {days} 天。',
+      activated: '授权有效且可用',
+      expired: '授权已过期，请激活后继续使用。',
+      trial: '正在使用试用版，剩余 {days} 天。',
       unknown: ''
     },
     languageOptions: {
@@ -424,147 +424,156 @@ export default {
     placeholder: '这里将实现遥感分析功能。'
   },
   calibration: {
-    title: '辐射定标',
+    pythonServiceNotRunning: 'Python 处理服务未运行',
+    startService: '启动服务',
+    serviceStarted: 'Python 服务启动成功',
+    serviceStartFailed: 'Python 服务启动失败',
     tabs: {
       calibration: '辐射定标',
       records: '定标记录',
       batch: '批量处理'
     },
-    pythonService: {
-      checking: '正在检查 Python 服务...',
-      running: 'Python 服务运行中',
-      stopped: 'Python 服务未运行',
-      start: '启动服务',
-      stop: '停止服务',
-      starting: '正在启动...',
-      stopping: '正在停止...'
-    },
-    panel: {
+    detection: {
       title: '定标板检测',
-      selectImages: '选择定标板图像',
-      selectImagesDesc: '选择包含定标板的5波段TIF图像（IMG_XXXX_1.tif ~ IMG_XXXX_5.tif）',
-      selectedFiles: '已选择 {count} 个文件',
-      noFiles: '未选择文件',
-      detect: '检测定标板',
-      detecting: '检测中...',
-      manualInput: '手动输入序列号',
-      serialNumber: '序列号',
-      serialPlaceholder: '例如：RP06-1234567-SC47506800540573',
-      parse: '解析',
-      result: '检测结果',
-      noResult: '尚无检测结果，请选择图像并检测定标板',
+      fromFile: '从 TIF 文件加载',
+      orManualInput: '或手动输入',
+      serialPlaceholder: '输入定标板序列号（例如 RP06-1234567-SC...）',
+      parse: '解析'
+    },
+    result: {
+      title: '检测结果',
+      empty: '暂无检测结果，请扫码或加载定标板图像。',
       serial: '序列号',
       version: '版本',
+      cameraModel: '相机型号',
+      wavelengthRange: '波长范围',
+      reflectanceRange: '反射率范围',
+      bandReflectances: '波段反射率',
+      band: '波段',
+      wavelength: '波长',
+      reflectance: '反射率',
+      irradiance: '照度',
+      saveRecord: '保存定标'
+    },
+    save: {
+      title: '保存定标记录',
+      serial: '序列号',
+      notes: '备注',
+      notesPlaceholder: '可选，填写定标说明...',
+      setAsActive: '设为当前激活定标'
+    },
+    records: {
+      serial: '序列号',
+      version: '版本',
+      reflectance: '反射率',
+      status: '状态',
+      createdAt: '创建时间',
+      active: '已激活',
+      inactive: '未激活',
+      activate: '激活',
+      view: '查看',
+      empty: '暂无定标记录'
+    },
+    details: {
+      title: '定标详情',
+      serial: '序列号',
+      version: '定标板版本',
+      status: '状态',
+      active: '已激活',
+      inactive: '未激活',
       minWavelength: '最小波长',
       maxWavelength: '最大波长',
       minReflectance: '最小反射率',
       maxReflectance: '最大反射率',
-      bandReflectances: '波段反射率',
-      irradiance: '照度（W/m²/nm）',
-      bandInfo: '波段信息',
-      save: '保存定标记录',
-      saving: '保存中...'
-    },
-    records: {
-      title: '定标记录',
-      empty: '暂无定标记录',
-      serial: '序列号',
-      version: '版本',
-      wavelengthRange: '波长范围',
-      reflectanceRange: '反射率范围',
-      status: '状态',
       createdAt: '创建时间',
-      active: '当前激活',
-      inactive: '未激活',
-      activate: '激活',
-      confirmDelete: '确定要删除此定标记录吗？',
-      viewDetails: '查看详情',
-      detailsTitle: '定标记录详情'
+      notes: '备注',
+      bandReflectances: '波段反射率',
+      band: '波段',
+      wavelength: '波长',
+      reflectance: '反射率',
+      irradiance: '照度',
+      noRecord: '未选择记录'
     },
     batch: {
-      title: '批量反射率校正',
-      config: '处理配置',
-      inputDir: '输入目录',
-      inputDirDesc: '包含待处理多光谱图像的目录',
-      outputDir: '输出目录',
-      outputDirDesc: '校正后图像的保存目录',
-      selectInputDir: '选择输入目录',
-      selectOutputDir: '选择输出目录',
-      useActiveCalibration: '使用当前激活的定标',
-      noActiveCalibration: '没有激活的定标记录，请先创建或激活一个定标记录',
-      options: '处理选项',
-      useDls: '使用DLS光传感器数据',
-      useDlsDesc: '利用机载光传感器数据校正照度变化',
-      generateThumbnails: '生成缩略图',
-      generateThumbnailsDesc: '为每个校正后的捕获生成预览图',
-      startProcessing: '开始处理',
-      stopProcessing: '停止处理',
-      progress: '处理进度',
-      totalCaptures: '总捕获数',
-      processedCaptures: '已处理',
-      currentCapture: '当前处理',
-      elapsedTime: '已用时间',
-      estimatedRemaining: '预计剩余',
-      status: {
-        idle: '空闲',
-        running: '运行中',
-        completed: '已完成',
-        failed: '失败',
-        cancelled: '已取消'
+      config: {
+        title: '批量处理配置',
+        inputDirectory: '输入目录',
+        selectInputDir: '选择输入目录...',
+        outputDirectory: '输出目录',
+        selectOutputDir: '选择输出目录...',
+        calibration: '定标记录',
+        selectCalibration: '选择定标记录',
+        active: '已激活',
+        panelImages: '定标板图像（可选）',
+        selectPanelImages: '选择定标板图像...',
+        panelImagesHint: '若提供，将使用这些图像重新计算照度',
+        filesSelected: '个文件已选择',
+        options: '处理选项',
+        generateThumbnails: '生成缩略图',
+        generateRgbPreview: '生成 RGB 预览图',
+        generateNdvi: '生成 NDVI 图',
+        start: '开始批量处理'
       },
-      history: '处理历史',
-      emptyHistory: '暂无处理记录'
+      progress: {
+        title: '处理进度',
+        status: '状态',
+        processed: '已处理',
+        progress: '进度',
+        currentCapture: '当前',
+        cancel: '取消',
+        noJob: '暂无运行中的任务',
+        statusText: {
+          pending: '等待中',
+          running: '运行中',
+          completed: '已完成',
+          failed: '失败',
+          cancelled: '已取消'
+        }
+      },
+      started: '批量处理已开始',
+      startFailed: '启动批量处理失败',
+      completed: '批量处理完成',
+      failed: '批量处理失败',
+      cancelled: '批量处理已取消'
     },
-    messages: {
-      serviceStarted: 'Python 服务已启动',
-      serviceStartFailed: '启动 Python 服务失败：{error}',
-      serviceStopped: 'Python 服务已停止',
-      serviceStopFailed: '停止 Python 服务失败：{error}',
-      selectImages: '请选择定标板图像',
-      detectSuccess: '定标板检测成功',
-      detectFailed: '定标板检测失败：{error}',
-      parseSuccess: '序列号解析成功',
-      parseFailed: '序列号解析失败：{error}',
-      saveSuccess: '定标记录保存成功',
-      saveFailed: '保存定标记录失败：{error}',
-      activateSuccess: '定标记录已激活',
-      activateFailed: '激活定标记录失败：{error}',
-      deleteSuccess: '定标记录已删除',
-      deleteFailed: '删除定标记录失败：{error}',
-      selectInputDir: '请选择输入目录',
-      selectOutputDir: '请选择输出目录',
-      batchStarted: '批处理已开始',
-      batchStartFailed: '启动批处理失败：{error}',
-      batchCompleted: '批处理完成',
-      batchFailed: '批处理失败：{error}',
-      batchCancelled: '批处理已取消'
-    }
+    selectFailed: '选择文件失败',
+    needFiveBands: '请选择 5 波段图像',
+    detectionSuccess: '定标板检测成功',
+    parseSuccess: '序列号解析成功',
+    parseFailed: '序列号解析失败',
+    saveSuccess: '定标记录保存成功',
+    saveFailed: '保存定标记录失败',
+    activateSuccess: '定标记录已激活',
+    deleteConfirm: {
+      title: '删除定标记录',
+      content: '确定要删除该定标记录吗？'
+    },
+    deleteSuccess: '定标记录已删除'
   },
   alignment: {
-    title: '影像配准',
     pythonServiceNotRunning: 'Python 处理服务未运行',
     startService: '启动服务',
     serviceStarted: 'Python 服务启动成功',
     serviceStartFailed: 'Python 服务启动失败',
     workflow: {
-      title: '影像配准工作流程',
-      step1: '1. 首先执行辐射定标，将原始图像转换为反射率图像',
-      step2: '2. 然后使用定标后的反射率图像进行配准',
-      note: '注意：配准应该在辐射定标后的反射率图像上执行，而不是原始图像。这样可以确保更好的特征匹配和更准确的结果。'
+      title: '影像配准流程',
+      step1: '1. 先进行辐射定标，将原始影像转换为反射率影像',
+      step2: '2. 使用定标后的反射率影像进行配准',
+      note: '注意：配准应基于辐射定标后的反射率影像，而不是原始影像，以获得更好的特征匹配与精度。'
     },
     warning: {
-      title: '输入图像警告',
-      useRawImages: '所选图像似乎不是辐射定标后的图像。为获得最佳效果，请使用定标步骤输出的反射率图像。是否仍要继续？'
+      title: '输入影像警告',
+      useRawImages: '所选影像似乎不是辐射定标后的影像。为获得最佳效果，请使用定标步骤输出的反射率影像。是否继续？'
     },
     tabs: {
       generate: '生成配准矩阵',
       single: '单张配准',
       batch: '批量配准',
-      records: '配准记录'
+      records: '记录'
     },
     generate: {
       title: '生成配准矩阵',
-      selectImages: '选择5波段图像',
+      selectImages: '选择 5 波段图像',
       info: '相机信息',
       cameraModel: '相机型号',
       cameraSerial: '相机序列号',
@@ -575,15 +584,19 @@ export default {
       wavelength: '波长',
       selectImagesFirst: '请先选择图像以查看相机信息',
       method: '配准方法',
-      opencvHint: '适用于 RedEdge-M/MX、Altum（基于ECC）',
+      opencvHint: '适用于 RedEdge-M/MX、Altum（基于 ECC）',
       siftHint: '适用于 RedEdge-P、Altum-PT（基于特征）',
       referenceBand: '参考波段',
+      maxIterations: '最大迭代次数',
+      maxIterationsHint: '数值越大越精确，但耗时更长。',
+      pyramidLevels: '金字塔层级',
+      pyramidLevelsHint: '0 表示禁用，层级越多越稳健但更慢。',
       compute: '计算配准矩阵'
     },
     single: {
       title: '单张配准',
       selectImages: '输入图像',
-      selectImagesPlaceholder: '选择5波段图像...',
+      selectImagesPlaceholder: '选择 5 波段图像...',
       filesSelected: '个文件已选择',
       warpMatrix: '配准矩阵',
       selectWarpMatrix: '选择配准矩阵',
@@ -592,8 +605,8 @@ export default {
       outputPathPlaceholder: '选择输出文件路径...',
       options: '输出选项',
       sortByWavelength: '按波长排序',
-      generateRgbPreview: '生成RGB预览',
-      generateNdvi: '生成NDVI',
+      generateRgbPreview: '生成 RGB 预览',
+      generateNdvi: '生成 NDVI',
       align: '执行配准'
     },
     batch: {
@@ -607,8 +620,8 @@ export default {
       active: '当前',
       options: '输出选项',
       sortByWavelength: '按波长排序',
-      generateRgbPreview: '生成RGB预览',
-      generateNdvi: '生成NDVI',
+      generateRgbPreview: '生成 RGB 预览',
+      generateNdvi: '生成 NDVI',
       start: '开始批量配准'
     },
     progress: {
@@ -618,7 +631,7 @@ export default {
       progress: '进度',
       currentCapture: '当前',
       cancel: '取消',
-      noJob: '没有正在运行的配准任务',
+      noJob: '暂无运行中的配准任务',
       statusText: {
         pending: '等待中',
         running: '运行中',
@@ -632,11 +645,11 @@ export default {
       success: '配准完成',
       outputPath: '输出路径',
       dimensions: '尺寸',
-      rgbPreview: 'RGB预览',
-      ndviPath: 'NDVI路径',
+      rgbPreview: 'RGB 预览',
+      ndviPath: 'NDVI 路径',
       openFolder: '打开输出文件夹',
       openFolderFailed: '打开文件夹失败',
-      noResult: '暂无配准结果。执行配准后查看结果。'
+      noResult: '暂无配准结果，执行配准后查看。'
     },
     records: {
       matrices: '配准矩阵',
@@ -656,7 +669,7 @@ export default {
       type: '类型',
       batch: '批量',
       single: '单张',
-      captures: '捕获数',
+      captures: '拍摄数',
       statusCol: '状态',
       createdAt: '创建时间',
       duration: '耗时',
@@ -670,7 +683,7 @@ export default {
       }
     },
     selectFailed: '选择文件失败',
-    needFiveBands: '请选择5波段图像',
+    needFiveBands: '请选择 5 波段图像',
     currentBands: '当前波段数',
     getCameraInfoFailed: '获取相机信息失败',
     computeSuccess: '配准矩阵计算成功',
@@ -678,14 +691,14 @@ export default {
     alignSuccess: '配准完成',
     alignFailed: '配准失败',
     batchStarted: '批量配准已开始',
-    batchStartFailed: '批量配准启动失败',
+    batchStartFailed: '启动批量配准失败',
     batchCompleted: '批量配准完成',
     batchFailed: '批量配准失败',
     batchCancelled: '批量配准已取消',
     activateSuccess: '配准矩阵已激活',
     deleteConfirm: {
       title: '删除配准矩阵',
-      content: '确定要删除此配准矩阵吗？'
+      content: '确定要删除该配准矩阵吗？'
     },
     deleteSuccess: '配准矩阵已删除'
   }

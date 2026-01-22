@@ -48,6 +48,21 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+          if (id.includes('ant-design-vue')) return 'vendor-antd'
+          if (id.includes('@ant-design/icons-vue')) return 'vendor-antd-icons'
+          if (id.includes('three')) return 'vendor-three'
+          if (id.includes('utif')) return 'vendor-utif'
+          if (id.includes('vue')) return 'vendor-vue'
+          return 'vendor'
+        }
+      }
+    }
+  },
   server: {
     port: 5173
   }

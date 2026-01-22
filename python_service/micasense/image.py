@@ -39,6 +39,10 @@ import micasense.plotutils as plotutils
 
 # helper function to convert euler angles to a rotation matrix
 def rotations_degrees_to_rotation_matrix(rotation_degrees):
+    if rotation_degrees is None:
+        return np.eye(3)
+    if len(rotation_degrees) < 3:
+        rotation_degrees = list(rotation_degrees) + [0.0] * (3 - len(rotation_degrees))
     cx = np.cos(np.deg2rad(rotation_degrees[0]))
     cy = np.cos(np.deg2rad(rotation_degrees[1]))
     cz = np.cos(np.deg2rad(rotation_degrees[2]))
@@ -489,13 +493,19 @@ class Image(object):
         # if we have externally supplied rotations/translations for the rig use these
         # otherwise use the rig-relatives intrinsic to the image
         if R is None:
-            R = rotations_degrees_to_rotation_matrix(self.rig_relatives)
+            if self.rig_relatives is None:
+                R = np.eye(3)
+            else:
+                R = rotations_degrees_to_rotation_matrix(self.rig_relatives)
         if T is None:
             T = np.zeros(3)
             # don't want to use this here
             # if self.rig_translations is not None:
             #     T = np.array(self.rig_translations)-np.array(ref.rig_translations)
-        R_ref = rotations_degrees_to_rotation_matrix(ref.rig_relatives)
+        if ref.rig_relatives is None:
+            R_ref = np.eye(3)
+        else:
+            R_ref = rotations_degrees_to_rotation_matrix(ref.rig_relatives)
         A = np.zeros((4, 4))
         A[0:3, 0:3] = np.dot(R_ref.T, R)
         A[0:3, 3] = T

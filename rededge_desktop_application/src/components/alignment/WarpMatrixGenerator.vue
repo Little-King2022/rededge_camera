@@ -38,12 +38,44 @@
         </a-select>
       </a-form-item>
 
+      <!-- OpenCV Parameters -->
+      <template v-if="options.method === 'opencv'">
+        <a-form-item :label="t('alignment.generate.maxIterations')">
+          <a-input-number
+            v-model:value="options.maxIterations"
+            :min="1"
+            :max="500"
+            :precision="0"
+            :disabled="!cameraInfo || isComputing"
+            style="width: 100%"
+          />
+          <div class="param-hint">{{ t('alignment.generate.maxIterationsHint') }}</div>
+        </a-form-item>
+        <a-form-item :label="t('alignment.generate.pyramidLevels')">
+          <a-input-number
+            v-model:value="options.pyramidLevels"
+            :min="0"
+            :max="6"
+            :precision="0"
+            :disabled="!cameraInfo || isComputing"
+            style="width: 100%"
+          />
+          <div class="param-hint">{{ t('alignment.generate.pyramidLevelsHint') }}</div>
+        </a-form-item>
+      </template>
+
       <!-- Progress -->
       <template v-if="progress">
         <a-alert
           :type="progress.status === 'completed' ? 'success' : (progress.status === 'failed' ? 'error' : 'info')"
           :message="progress.message"
           show-icon
+        />
+        <a-progress
+          v-if="typeof progress.percent === 'number'"
+          :percent="progress.percent"
+          size="small"
+          :status="progress.status === 'failed' ? 'exception' : (progress.status === 'completed' ? 'success' : 'active')"
         />
       </template>
 
@@ -95,7 +127,9 @@ const emit = defineEmits(['select-images', 'compute', 'clear'])
 
 const options = ref({
   method: 'opencv',
-  referenceBand: 1
+  referenceBand: 1,
+  maxIterations: 10,
+  pyramidLevels: 0
 })
 
 // Update recommended method when camera info changes
@@ -140,6 +174,12 @@ function handleCompute() {
 }
 
 .method-hint {
+  color: #888;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.param-hint {
   color: #888;
   font-size: 12px;
   margin-top: 4px;

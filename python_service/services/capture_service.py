@@ -34,36 +34,20 @@ class CaptureService:
         加载多波段图像组
 
         Args:
-            image_paths: 5个TIF文件路径列表，或单个5波段堆栈TIF文件路径
+            image_paths: 5个单波段TIF文件路径列表
 
         Returns:
-            Capture对象或MultiBandImage对象（用于单个多波段文件）
+            Capture对象
         """
         CaptureService.check_micasense()
+
+        if len(image_paths) != 5:
+            raise ValueError('Expected 5 single-band TIF files for alignment')
 
         # 验证文件存在
         for path in image_paths:
             if not os.path.exists(path):
                 raise FileNotFoundError(f'Image file not found: {path}')
-
-        # 如果是单个文件，检查是否是多波段TIF
-        if len(image_paths) == 1:
-            from osgeo import gdal
-            dataset = gdal.Open(image_paths[0], gdal.GA_ReadOnly)
-            if dataset is not None:
-                band_count = dataset.RasterCount
-                
-                if band_count >= 5:
-                    # 单个多波段TIF文件
-                    # 返回一个包装对象而不是Capture对象
-                    logger.info(f'Loading single multi-band TIF file with {band_count} bands')
-                    
-                    from services.multiband_image import MultiBandImage
-                    multiband = MultiBandImage(image_paths[0], dataset)
-                    dataset = None
-                    return multiband
-                
-                dataset = None
 
         # 创建Capture对象（多个单波段文件）
         capture = Capture.from_filelist(image_paths)

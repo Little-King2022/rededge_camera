@@ -72,8 +72,13 @@ export const useCalibrationStore = defineStore('calibration', () => {
     try {
       isLoading.value = true
       error.value = null
-      records.value = await window.electronAPI.calibration.getAll()
-      activeRecord.value = await window.electronAPI.calibration.getActive()
+      const allRecords = await window.electronAPI.calibration.getAll()
+      records.value = Array.isArray(allRecords)
+        ? allRecords.map(normalizeRecord).filter(Boolean)
+        : []
+
+      const active = await window.electronAPI.calibration.getActive()
+      activeRecord.value = normalizeRecord(active)
     } catch (e) {
       console.error('[CalibrationStore] Failed to load records:', e)
       error.value = e.message
@@ -240,6 +245,20 @@ export const useCalibrationStore = defineStore('calibration', () => {
   function clearDetection() {
     currentDetection.value = null
     scanError.value = null
+  }
+
+  function normalizeRecord(record) {
+    if (!record || typeof record !== 'object') {
+      return null
+    }
+
+    return {
+      ...record,
+      band_reflectances: record.band_reflectances || {},
+      panel_irradiance: Array.isArray(record.panel_irradiance)
+        ? Array.from(record.panel_irradiance)
+        : []
+    }
   }
 
   return {

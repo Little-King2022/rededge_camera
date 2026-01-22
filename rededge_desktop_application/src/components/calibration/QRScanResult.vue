@@ -124,7 +124,7 @@ function formatPercent(value) {
 .band-section {
   flex: 1;
   overflow: auto;
-  margin-top: 8px;
+  margin-top: 16px;
 }
 
 .actions {

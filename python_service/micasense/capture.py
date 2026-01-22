@@ -804,11 +804,15 @@ class Capture(object):
         # use the calibrated warp matrices to verify keypoints
         warp_matrices_calibrated = self.get_warp_matrices(ref_index=ref)
 
+        ref_image_SIFT = self.images[ref].undistorted(self.images[ref].raw())
         if not rest_shape == ref_shape:
-            ref_image_SIFT = resize(self.images[ref].undistorted(
-                self.images[ref].raw()), rest_shape)
-            ref_image_SIFT = (ref_image_SIFT / ref_image_SIFT.max()
-                              * 65535).astype(np.uint16)
+            ref_image_SIFT = resize(ref_image_SIFT, rest_shape)
+
+        ref_max = ref_image_SIFT.max()
+        if ref_max > 0:
+            ref_image_SIFT = (ref_image_SIFT / ref_max * 65535).astype(np.uint16)
+        else:
+            ref_image_SIFT = ref_image_SIFT.astype(np.uint16)
 
         descriptor_extractor.detect_and_extract(ref_image_SIFT)
         keypoints_ref = descriptor_extractor.keypoints
@@ -903,6 +907,8 @@ class Capture(object):
             # finding a good matches between panchro & thermal in most cases
             else:
                 P = ProjectiveTransform(matrix=warp_matrices_calibrated[ix])
+                kpi = filtered_kpi
+                kpr = filtered_kpr
                 if verbose > 0:
                     print('no match for index {:d}'.format(ix))
             models.append(P)

@@ -25,7 +25,7 @@
       <a-tab-pane key="calibration" :tab="t('calibration.tabs.calibration')">
         <a-row :gutter="16">
           <!-- Left: Detection Panel -->
-          <a-col :span="12">
+          <a-col :span="8">
             <a-card :title="t('calibration.detection.title')" class="detection-card">
               <a-space direction="vertical" :size="16" style="width: 100%">
                 <!-- From File Button -->
@@ -68,7 +68,7 @@
           </a-col>
 
           <!-- Right: Detection Result -->
-          <a-col :span="12">
+          <a-col :span="16">
             <a-card :title="t('calibration.result.title')" class="result-card">
               <template v-if="calibrationStore.currentDetection">
                 <QRScanResult
@@ -146,7 +146,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, toRaw } from 'vue'
+import { ref, onMounted, onUnmounted, toRaw, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { message, Modal } from 'ant-design-vue'
 import { FolderOpenOutlined } from '@ant-design/icons-vue'
@@ -171,16 +171,25 @@ const selectedRecord = ref(null)
 const saveFormRef = ref(null)
 const currentBatchJob = ref(null)
 const batchPollTimer = ref(null)
+const hasLoadedRecords = ref(false)
 
 // Lifecycle
 onMounted(async () => {
   await calibrationStore.checkPythonService()
-  await calibrationStore.loadRecords()
+  if (activeTab.value === 'records' || activeTab.value === 'batch') {
+    await loadRecordsIfNeeded()
+  }
 })
 
 onUnmounted(() => {
   if (batchPollTimer.value) {
     clearInterval(batchPollTimer.value)
+  }
+})
+
+watch(activeTab, async (tab) => {
+  if (tab === 'records' || tab === 'batch') {
+    await loadRecordsIfNeeded()
   }
 })
 
@@ -192,6 +201,14 @@ async function startService() {
   } else {
     message.error(t('calibration.serviceStartFailed'))
   }
+}
+
+async function loadRecordsIfNeeded() {
+  if (hasLoadedRecords.value) {
+    return
+  }
+  await calibrationStore.loadRecords()
+  hasLoadedRecords.value = true
 }
 
 async function selectAndDetectFromFiles() {

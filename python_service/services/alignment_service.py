@@ -61,7 +61,7 @@ class AlignmentService:
 
     @staticmethod
     def compute_warp_matrices(image_paths, method='opencv', reference_band=1,
-                              max_iterations=2500, pyramid_levels=None):
+                              max_iterations=10, pyramid_levels=0, progress_callback=None):
         """
         计算多波段图像的配准变换矩阵
 
@@ -79,19 +79,37 @@ class AlignmentService:
 
         start_time = time.time()
 
+        if len(image_paths) != 5:
+            raise ValueError('Expected 5 single-band TIF files for alignment')
+
+        if progress_callback:
+            progress_callback(5, '正在验证输入...')
+
         # 验证文件
         for path in image_paths:
             if not os.path.exists(path):
                 raise FileNotFoundError(f'Image file not found: {path}')
 
+        if progress_callback:
+            progress_callback(15, '正在加载图像...')
+
         # 加载图像
         capture = Capture.from_filelist(image_paths)
+
+        # Alignment v2 defaults: keep iterations and pyramid levels low for speed and stability.
+        if max_iterations is None:
+            max_iterations = 10
+        if pyramid_levels is None:
+            pyramid_levels = 0
 
         # 获取相机信息
         camera_model = capture.camera_model if hasattr(capture, 'camera_model') else 'Unknown'
         camera_serial = capture.camera_serial if hasattr(capture, 'camera_serial') else 'Unknown'
 
         # 执行配准
+        if progress_callback:
+            progress_callback(25, '正在配准图像，根据所选方法和计算机性能，这可能需要一些时间...')
+
         if method == AlignmentService.METHOD_SIFT:
             warp_matrices, alignment_pairs = AlignmentService._align_sift(
                 capture, reference_band
@@ -101,10 +119,16 @@ class AlignmentService:
                 capture, reference_band, max_iterations, pyramid_levels
             )
 
+        if progress_callback:
+            progress_callback(80, '正在计算裁剪边界...')
+
         # 获取裁剪尺寸
         cropped_dimensions = AlignmentService._calculate_crop_dimensions(
             capture, warp_matrices, reference_band
         )
+
+        if progress_callback:
+            progress_callback(90, '即将完成...')
 
         elapsed_time = time.time() - start_time
 
@@ -116,7 +140,6 @@ class AlignmentService:
             'reference_band': reference_band,
             'warp_matrices': [m.tolist() for m in warp_matrices],
             'cropped_dimensions': cropped_dimensions,
-            'alignment_pairs': alignment_pairs,
             'elapsed_time': elapsed_time
         }
 
@@ -130,7 +153,8 @@ class AlignmentService:
             capture,
             ref_index=reference_band,
             warp_mode=warp_mode,
-            max_iterations=max_iterations
+            max_iterations=max_iterations,
+            pyramid_levels=pyramid_levels
         )
 
         return warp_matrices, alignment_pairs
@@ -138,75 +162,39 @@ class AlignmentService:
     @staticmethod
     def _align_sift(capture, reference_band):
         """使用SIFT特征点方法进行配准"""
+        for img in capture.images:
+            if img.rig_relatives is None:
+                img.rig_relatives = [0.0, 0.0, 0.0]
+            elif len(img.rig_relatives) < 3:
+                img.rig_relatives = list(img.rig_relatives) + [0.0] * (3 - len(img.rig_relatives))
+
         # 调用capture的SIFT配准方法
-        aligned_capture = capture.SIFT_align_capture(
+        warp_matrices = capture.SIFT_align_capture(
             ref=reference_band,
             min_matches=10
         )
-
-        # 提取变换矩阵
-        warp_matrices = []
-        for i, img in enumerate(capture.images):
-            if hasattr(img, 'warp_matrix') and img.warp_matrix is not None:
-                warp_matrices.append(img.warp_matrix)
-            else:
-                # 参考波段使用单位矩阵
-                warp_matrices.append(np.eye(3, dtype=np.float32))
 
         alignment_pairs = []  # SIFT方法不返回alignment_pairs
 
         return warp_matrices, alignment_pairs
 
     @staticmethod
-    def _calculate_crop_dimensions(capture, warp_matrices, reference_band):
+    def _calculate_crop_dimensions(capture, warp_matrices, reference_band, warp_mode=cv2.MOTION_HOMOGRAPHY):
         """
         计算配准后的有效裁剪区域
 
         Returns:
             list: [left, top, width, height]
         """
-        ref_img = capture.images[reference_band]
-        height, width = ref_img.raw().shape[:2]
+        warp_matrices = [np.array(m, dtype=np.float32) for m in warp_matrices]
+        cropped_dimensions, _ = imageutils.find_crop_bounds(
+            capture,
+            warp_matrices,
+            warp_mode=warp_mode,
+            reference_band=reference_band
+        )
 
-        # 计算所有变换后图像的有效区域交集
-        min_x, min_y = 0, 0
-        max_x, max_y = width, height
-
-        for i, warp_matrix in enumerate(warp_matrices):
-            if warp_matrix is None:
-                continue
-
-            warp_matrix = np.array(warp_matrix, dtype=np.float32)
-
-            # 四个角点
-            corners = np.array([
-                [0, 0],
-                [width, 0],
-                [width, height],
-                [0, height]
-            ], dtype=np.float32).reshape(-1, 1, 2)
-
-            # 变换角点
-            if warp_matrix.shape[0] == 3:
-                transformed = cv2.perspectiveTransform(corners, warp_matrix)
-            else:
-                transformed = cv2.transform(corners, warp_matrix)
-
-            transformed = transformed.reshape(-1, 2)
-
-            # 更新边界
-            min_x = max(min_x, transformed[:, 0].min())
-            min_y = max(min_y, transformed[:, 1].min())
-            max_x = min(max_x, transformed[:, 0].max())
-            max_y = min(max_y, transformed[:, 1].max())
-
-        # 确保为整数
-        left = int(np.ceil(min_x))
-        top = int(np.ceil(min_y))
-        crop_width = int(np.floor(max_x)) - left
-        crop_height = int(np.floor(max_y)) - top
-
-        return [left, top, crop_width, crop_height]
+        return [int(value) for value in cropped_dimensions]
 
     @staticmethod
     def apply_alignment(capture, warp_matrices, cropped_dimensions=None,
@@ -230,24 +218,34 @@ class AlignmentService:
         ref_img = capture.images[reference_band]
         height, width = ref_img.raw().shape[:2]
 
-        # 准备输出数组
-        aligned_stack = np.zeros((height, width, len(warp_matrices)), dtype=np.float32)
-
         warp_mode = cv2.MOTION_HOMOGRAPHY
+        warp_matrices = [np.array(m, dtype=np.float32) for m in warp_matrices]
 
-        for i, warp_matrix in enumerate(warp_matrices):
-            # 获取源图像
-            img = capture.images[i]
+        if cropped_dimensions is None:
+            cropped_dimensions = AlignmentService._calculate_crop_dimensions(
+                capture, warp_matrices, reference_band, warp_mode=warp_mode
+            )
 
-            if img_type == 'reflectance' and irradiance_list is not None:
-                source = img.undistorted_reflectance(irradiance_list[i])
-            elif img_type == 'radiance':
-                source = img.undistorted_radiance()
+        if img_type in ('reflectance', 'radiance'):
+            if img_type == 'reflectance':
+                capture.compute_undistorted_reflectance(irradiance_list)
             else:
-                source = img.undistorted(img.raw()).astype(np.float32)
+                capture.compute_undistorted_radiance()
 
-            # 应用变换
-            warp_matrix = np.array(warp_matrix, dtype=np.float32)
+            return imageutils.aligned_capture(
+                capture,
+                warp_matrices,
+                warp_mode,
+                cropped_dimensions,
+                reference_band,
+                img_type=img_type
+            )
+
+        # Raw alignment fallback for non-standard output types.
+        aligned_stack = np.zeros((height, width, len(warp_matrices)), dtype=np.float32)
+        for i, warp_matrix in enumerate(warp_matrices):
+            img = capture.images[i]
+            source = img.undistorted(img.raw()).astype(np.float32)
 
             if warp_matrix.shape[0] == 3:
                 aligned = cv2.warpPerspective(
@@ -262,12 +260,8 @@ class AlignmentService:
 
             aligned_stack[:, :, i] = aligned
 
-        # 裁剪
-        if cropped_dimensions is not None:
-            left, top, crop_width, crop_height = cropped_dimensions
-            aligned_stack = aligned_stack[top:top+crop_height, left:left+crop_width, :]
-
-        return aligned_stack
+        left, top, crop_width, crop_height = cropped_dimensions
+        return aligned_stack[top:top + crop_height, left:left + crop_width, :]
 
     @staticmethod
     def save_warp_matrices(warp_matrices, output_path):

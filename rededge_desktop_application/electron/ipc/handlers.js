@@ -119,7 +119,6 @@ export function registerIPCHandlers() {
     }))
   }
 
-
   // ========== Camera Profile Handlers ==========
 
   ipcMain.handle('camera:getAllProfiles', async () => {
@@ -665,10 +664,6 @@ export function registerIPCHandlers() {
     return await pythonService.getCameraInfo(imagePaths)
   })
 
-  ipcMain.handle('alignment:checkTifBands', async (event, filePath) => {
-    return await pythonService.checkTifBands(filePath)
-  })
-
   ipcMain.handle('alignment:computeWarpMatrices', async (event, { imagePaths, options }) => {
     // 生成保存路径
     const warpMatricesDir = path.join(app.getPath('userData'), 'warp_matrices')
@@ -677,28 +672,90 @@ export function registerIPCHandlers() {
     const timestamp = Date.now()
     const outputPath = path.join(warpMatricesDir, `warp_matrices_${timestamp}.npy`)
 
-    const result = await pythonService.computeWarpMatrices(imagePaths, {
+    const result = await pythonService.startComputeWarpMatrices(imagePaths, {
       ...options,
       outputPath
     })
 
-    if (result.success) {
-      // 保存到数据库
-      const recordId = database.createWarpMatricesRecord({
-        camera_serial: result.camera_serial,
-        camera_model: result.camera_model,
-        alignment_method: result.method,
-        reference_band: result.reference_band,
-        warp_matrices_path: outputPath,
-        source_image_path: imagePaths[0],
-        alignment_quality: result.alignment_quality || 95,
-        cropped_dimensions: result.cropped_dimensions
+    if (result.success && result.job_id) {
+      database.createWarpMatrixJob({
+        job_id: result.job_id,
+        status: result.status || 'pending',
+        progress: 0,
+        message: 'queued',
+        output_path: outputPath,
+        image_paths: imagePaths,
+        options: { ...options }
       })
-
-      result.record_id = recordId
     }
 
     return result
+  })
+
+  ipcMain.handle('alignment:getComputeWarpMatricesStatus', async (event, jobId) => {
+    try {
+      const result = await pythonService.getComputeWarpMatricesStatus(jobId)
+      const jobRecord = database.getWarpMatrixJobByJobId(jobId)
+
+      if (result?.success) {
+        database.updateWarpMatrixJob(jobId, {
+          status: result.status,
+          progress: result.progress,
+          message: result.message,
+          error_message: result.error_message || null,
+          started_at: result.started_at || jobRecord?.started_at,
+          completed_at: result.completed_at || jobRecord?.completed_at
+        })
+      }
+
+      if (result?.success && result.status === 'completed' && result.result) {
+        if (jobRecord?.record_id) {
+          result.record_id = jobRecord.record_id
+        } else {
+          const recordId = database.createWarpMatricesRecord({
+            camera_serial: result.result.camera_serial,
+            camera_model: result.result.camera_model,
+            alignment_method: result.result.method,
+            reference_band: result.result.reference_band,
+            warp_matrices_path: result.result.warp_matrices_path || jobRecord?.output_path,
+            source_image_path: jobRecord?.image_paths?.[0],
+            alignment_quality: result.result.alignment_quality || 95,
+            cropped_dimensions: result.result.cropped_dimensions
+          })
+
+          database.updateWarpMatrixJob(jobId, {
+            status: 'completed',
+            progress: 100,
+            message: 'completed',
+            completed_at: result.completed_at || new Date().toISOString(),
+            record_id: recordId
+          })
+
+          result.record_id = recordId
+        }
+      }
+
+      return result
+    } catch (error) {
+      const message = error.message || 'Job not found'
+      database.updateWarpMatrixJob(jobId, {
+        status: 'failed',
+        progress: 100,
+        message: 'failed',
+        error_message: message,
+        completed_at: new Date().toISOString()
+      })
+      return { success: false, error: message, status: 'failed' }
+    }
+  })
+
+  ipcMain.handle('alignment:getWarpMatrixJobs', async () => {
+    return database.getAllWarpMatrixJobs()
+  })
+
+  ipcMain.handle('alignment:deleteWarpMatrixJob', async (event, jobId) => {
+    database.deleteWarpMatrixJob(jobId)
+    return { success: true }
   })
 
   ipcMain.handle('alignment:getWarpMatrices', async () => {
@@ -737,7 +794,12 @@ export function registerIPCHandlers() {
       return { success: false, error: 'Warp matrix record not found' }
     }
 
-    return await pythonService.alignSingle(imagePaths, record.warp_matrices_path, outputPath, options)
+    const mergedOptions = { ...(options || {}) }
+    if (mergedOptions.reference_band == null) {
+      mergedOptions.reference_band = record.reference_band
+    }
+
+    return await pythonService.alignSingle(imagePaths, record.warp_matrices_path, outputPath, mergedOptions)
   })
 
   ipcMain.handle('alignment:alignBatch', async (event, { inputDirectory, outputDirectory, warpMatrixId, options }) => {
@@ -746,7 +808,12 @@ export function registerIPCHandlers() {
       return { success: false, error: 'Warp matrix record not found' }
     }
 
-    const result = await pythonService.alignBatch(inputDirectory, outputDirectory, record.warp_matrices_path, options)
+    const mergedOptions = { ...(options || {}) }
+    if (mergedOptions.reference_band == null) {
+      mergedOptions.reference_band = record.reference_band
+    }
+
+    const result = await pythonService.alignBatch(inputDirectory, outputDirectory, record.warp_matrices_path, mergedOptions)
 
     if (result.success) {
       // 创建任务记录

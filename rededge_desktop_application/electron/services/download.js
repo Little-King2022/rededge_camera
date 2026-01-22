@@ -420,9 +420,32 @@ class DownloadService {
         reqOptions.agent = proxyAgent
       }
 
+      let settled = false
+      let onAbort = null
+      const finish = (error, buffer) => {
+        if (settled) {
+          return
+        }
+        settled = true
+        if (signal && onAbort) {
+          signal.removeEventListener('abort', onAbort)
+        }
+        if (error) {
+          reject(error)
+        } else {
+          resolve(buffer)
+        }
+      }
+
+      if (signal?.aborted) {
+        finish(new Error('Download aborted'))
+        return
+      }
+
       const req = httpModule.request(url, reqOptions, (res) => {
         if (res.statusCode < 200 || res.statusCode >= 300) {
-          return reject(new Error(`HTTP ${res.statusCode}`))
+          finish(new Error(`HTTP ${res.statusCode}`))
+          return
         }
 
         const totalBytes = parseInt(res.headers['content-length'] || '0', 10)
@@ -466,21 +489,31 @@ class DownloadService {
             progressCallback(buffer.length, totalBytes, true)
           }
 
-          resolve(buffer)
+          finish(null, buffer)
         })
       })
 
-      req.on('error', reject)
+      req.on('error', (error) => {
+        if (signal?.aborted) {
+          finish(new Error('Download aborted'))
+          return
+        }
+        finish(error)
+      })
 
       req.on('timeout', () => {
         req.destroy()
-        reject(new Error('Request timeout'))
+        finish(new Error('Request timeout'))
       })
 
-      signal.addEventListener('abort', () => {
+      onAbort = signal ? () => {
         req.destroy()
-        reject(new Error('Download aborted'))
-      })
+        finish(new Error('Download aborted'))
+      } : null
+
+      if (signal && onAbort) {
+        signal.addEventListener('abort', onAbort)
+      }
 
       req.end()
     })

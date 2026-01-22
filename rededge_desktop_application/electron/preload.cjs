@@ -126,10 +126,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     selectImages: () => ipcRenderer.invoke('alignment:selectImages'),
     // 获取相机信息
     getCameraInfo: (imagePaths) => ipcRenderer.invoke('alignment:getCameraInfo', imagePaths),
-    // 检查TIF文件波段数
-    checkTifBands: (filePath) => ipcRenderer.invoke('alignment:checkTifBands', filePath),
     // 计算配准矩阵
     computeWarpMatrices: (imagePaths, options) => ipcRenderer.invoke('alignment:computeWarpMatrices', { imagePaths, options }),
+    // 获取配准矩阵计算状态
+    getComputeWarpMatricesStatus: (jobId) => ipcRenderer.invoke('alignment:getComputeWarpMatricesStatus', jobId),
+    // 获取配准矩阵计算任务
+    getWarpMatrixJobs: () => ipcRenderer.invoke('alignment:getWarpMatrixJobs'),
+    // 删除配准矩阵计算任务
+    deleteWarpMatrixJob: (jobId) => ipcRenderer.invoke('alignment:deleteWarpMatrixJob', jobId),
     // 获取所有配准矩阵记录
     getWarpMatrices: () => ipcRenderer.invoke('alignment:getWarpMatrices'),
     // 获取指定相机的配准矩阵记录

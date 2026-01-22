@@ -116,6 +116,7 @@ export default {
     settingsTitle: 'Settings',
     refreshRate: 'Refresh Rate (Hz)',
     statsTitle: 'Preview Statistics',
+    bandvisualization_title: 'Band Visualization',
     statusLabel: 'Status',
     currentRate: 'Current Rate',
     frameTimestamp: 'Frame Timestamp',
@@ -586,6 +587,10 @@ export default {
       opencvHint: 'Best for RedEdge-M/MX, Altum (ECC-based)',
       siftHint: 'Best for RedEdge-P, Altum-PT (feature-based)',
       referenceBand: 'Reference Band',
+      maxIterations: 'Max Iterations',
+      maxIterationsHint: 'Higher values can improve alignment but take longer.',
+      pyramidLevels: 'Pyramid Levels',
+      pyramidLevelsHint: '0 disables pyramid; higher values can improve robustness but take longer.',
       compute: 'Compute Warp Matrices'
     },
     single: {

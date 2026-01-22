@@ -28,6 +28,8 @@ const store = new Store({
     calibration_records: [],
     // 配准矩阵记录
     warp_matrices_records: [],
+    // 配准矩阵计算任务
+    warp_matrix_jobs: [],
     // 配准任务记录
     alignment_jobs: [],
     // 批处理任务记录
@@ -442,6 +444,70 @@ class DatabaseService {
     const records = this.getAllWarpMatricesRecords()
     const filtered = records.filter(r => r.id !== id)
     this.store.set('warp_matrices_records', filtered)
+  }
+
+  // Warp Matrix Jobs Repository
+  getAllWarpMatrixJobs() {
+    return this.store.get('warp_matrix_jobs', [])
+  }
+
+  getWarpMatrixJobByJobId(jobId) {
+    const jobs = this.getAllWarpMatrixJobs()
+    return jobs.find(j => j.job_id === jobId) || null
+  }
+
+  getActiveWarpMatrixJob() {
+    const jobs = this.getAllWarpMatrixJobs()
+    return jobs.find(j => j.status === 'pending' || j.status === 'running') || null
+  }
+
+  createWarpMatrixJob(job) {
+    const jobs = this.getAllWarpMatrixJobs()
+    const now = new Date().toISOString()
+    const id = this._getNextId('warp_matrix_jobs')
+
+    const newJob = {
+      id,
+      job_id: job.job_id,
+      status: job.status || 'pending',
+      progress: job.progress || 0,
+      message: job.message || 'queued',
+      output_path: job.output_path || null,
+      image_paths: job.image_paths || [],
+      options: job.options || {},
+      record_id: null,
+      error_message: null,
+      started_at: null,
+      completed_at: null,
+      created_at: now,
+      updated_at: now
+    }
+
+    jobs.push(newJob)
+    this.store.set('warp_matrix_jobs', jobs)
+    return id
+  }
+
+  updateWarpMatrixJob(jobId, updates) {
+    const jobs = this.getAllWarpMatrixJobs()
+    const index = jobs.findIndex(j => j.job_id === jobId)
+
+    if (index === -1) return
+
+    const now = new Date().toISOString()
+    jobs[index] = {
+      ...jobs[index],
+      ...updates,
+      updated_at: now
+    }
+
+    this.store.set('warp_matrix_jobs', jobs)
+  }
+
+  deleteWarpMatrixJob(jobId) {
+    const jobs = this.getAllWarpMatrixJobs()
+    const filtered = jobs.filter(j => j.job_id !== jobId)
+    this.store.set('warp_matrix_jobs', filtered)
   }
 
   // Alignment Jobs Repository

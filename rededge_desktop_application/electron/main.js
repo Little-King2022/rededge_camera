@@ -1,4 +1,4 @@
-import { app, BrowserWindow, protocol } from 'electron'
+import { app, BrowserWindow, crashReporter, dialog, protocol, shell } from 'electron'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import database from './services/database.js'
@@ -7,8 +7,16 @@ import { registerIPCHandlers } from './ipc/handlers.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+const isDev = Boolean(process.env.VITE_DEV_SERVER_URL || process.env.NODE_ENV === 'development')
 
 let mainWindow = null
+let rendererRestartAttempts = 0
+let lastRendererRestartAt = 0
+let pendingRendererRestart = null
+let restartInProgress = false
+let crashDialogOpen = false
+let rendererRestarting = false
+let rendererRestartResetTimer = null
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -20,6 +28,22 @@ protocol.registerSchemesAsPrivileged([
     }
   }
 ])
+
+if (process.env.REDEDGE_DISABLE_HW_ACCELERATION === '1' || (isDev && process.env.REDEDGE_DISABLE_HW_ACCELERATION !== '0')) {
+  app.disableHardwareAcceleration()
+  app.commandLine.appendSwitch('disable-gpu');
+  app.commandLine.appendSwitch('disable-gpu-compositing');
+  console.log('[Main] Hardware acceleration disabled')
+}
+
+const crashDumpsDir = path.join(app.getPath('userData'), 'crashDumps')
+app.setPath('crashDumps', crashDumpsDir)
+crashReporter.start({
+  submitURL: '',
+  uploadToServer: false,
+  compress: true
+})
+console.log('[Main] Crash dumps directory:', crashDumpsDir)
 
 /**
  * Create main application window
@@ -55,6 +79,22 @@ function createWindow() {
   // Show window when ready
   mainWindow.once('ready-to-show', () => {
     mainWindow.show()
+    if (rendererRestarting) {
+      setRendererRestarting(false)
+    }
+  })
+
+  mainWindow.webContents.on('render-process-gone', (event, details) => {
+    console.error('[Main] Renderer process gone:', details)
+    scheduleRendererRestart(details)
+  })
+
+  mainWindow.webContents.on('unresponsive', () => {
+    console.warn('[Main] Renderer is unresponsive')
+  })
+
+  mainWindow.webContents.on('responsive', () => {
+    console.info('[Main] Renderer is responsive')
   })
 
   mainWindow.on('closed', () => {
@@ -62,6 +102,120 @@ function createWindow() {
   })
 
   console.log('[Main] Window created')
+}
+
+function scheduleRendererRestart(details) {
+  const now = Date.now()
+  if (now - lastRendererRestartAt > 60000) {
+    rendererRestartAttempts = 0
+  }
+  rendererRestartAttempts += 1
+  lastRendererRestartAt = now
+
+  const autoRestartAllowed = rendererRestartAttempts <= 3
+  if (!autoRestartAllowed) {
+    console.error('[Main] Renderer restart suppressed after repeated crashes')
+  }
+
+  if (autoRestartAllowed && !pendingRendererRestart) {
+    console.warn(`[Main] Scheduling renderer restart (attempt ${rendererRestartAttempts})`, details)
+    pendingRendererRestart = setTimeout(() => {
+      pendingRendererRestart = null
+      restartRenderer('auto')
+    }, 2000)
+  }
+
+  showRendererCrashDialog(details, autoRestartAllowed).catch((error) => {
+    console.error('[Main] Failed to show crash dialog:', error)
+  })
+}
+
+function restartRenderer(reason) {
+  if (restartInProgress) {
+    return
+  }
+
+  setRendererRestarting(true)
+  restartInProgress = true
+  console.warn(`[Main] Restarting renderer (${reason})`)
+  try {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.destroy()
+      mainWindow = null
+    }
+    createWindow()
+  } finally {
+    restartInProgress = false
+  }
+}
+
+function setRendererRestarting(active) {
+  rendererRestarting = active
+  if (rendererRestartResetTimer) {
+    clearTimeout(rendererRestartResetTimer)
+    rendererRestartResetTimer = null
+  }
+  if (active) {
+    rendererRestartResetTimer = setTimeout(() => {
+      rendererRestarting = false
+      rendererRestartResetTimer = null
+    }, 10000)
+  }
+}
+
+async function showRendererCrashDialog(details, autoRestartAllowed) {
+  if (crashDialogOpen) {
+    return
+  }
+
+  crashDialogOpen = true
+  const detailLines = [
+    `Reason: ${details.reason}`,
+    `Exit code: ${details.exitCode}`,
+    `Crash dumps: ${crashDumpsDir}`,
+    `Time: ${new Date().toLocaleString()}`
+  ]
+  const message = autoRestartAllowed
+    ? 'The renderer process crashed. The app will restart automatically.'
+    : 'The renderer process crashed repeatedly. Auto-restart has been paused.'
+
+  // different buttons based on whether auto-restart is allowed
+  const buttons = autoRestartAllowed ? ['OK', 'Open Crash Dumps', 'Quit Application'] : ['Restart Now', 'Open Crash Dumps', 'Quit Application']
+
+  const { response } = await dialog.showMessageBox({
+    type: 'error',
+    title: 'Renderer Crashed',
+    message,
+    detail: detailLines.join('\n'),
+    buttons,
+    defaultId: 0,
+    cancelId: 2,
+    noLink: true
+  })
+
+  crashDialogOpen = false
+
+  if (response === 1) {
+    await shell.openPath(crashDumpsDir)
+    return
+  }
+
+  if (response === 2) {
+    if (pendingRendererRestart) {
+      clearTimeout(pendingRendererRestart)
+      pendingRendererRestart = null
+    }
+    app.quit()
+    return
+  }
+
+  if (response === 0) {
+    if (autoRestartAllowed) {
+      return
+    }
+    restartRenderer('manual')
+    return
+  }
 }
 
 /**
@@ -94,6 +248,16 @@ async function initialize() {
  */
 
 app.whenReady().then(async () => {
+  app.on('render-process-gone', (event, webContents, details) => {
+    console.error('[Main] App render-process-gone:', details)
+  })
+
+  app.on('child-process-gone', (event, details) => {
+    if (details.type === 'GPU') {
+      console.error('[Main] GPU process gone:', details)
+    }
+  })
+
   const previewDir = path.join(app.getPath('userData'), 'capture-previews')
   protocol.registerFileProtocol('preview', (request, callback) => {
     try {
@@ -125,6 +289,10 @@ app.whenReady().then(async () => {
 })
 
 app.on('window-all-closed', () => {
+  if (rendererRestarting) {
+    console.warn('[Main] Skipping app quit during renderer restart')
+    return
+  }
   if (process.platform !== 'darwin') {
     app.quit()
   }

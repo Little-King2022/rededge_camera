@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="alignment-view">
     <!-- Python Service Status Banner -->
     <a-alert
@@ -197,6 +197,7 @@ const bandData = computed(() => {
 onMounted(async () => {
   await alignmentStore.checkPythonService()
   await alignmentStore.loadWarpMatrices()
+  await alignmentStore.loadWarpMatrixJobs()
   await alignmentStore.loadJobHistory()
 })
 
@@ -228,49 +229,15 @@ async function handleSelectImages() {
 
   const filePaths = result.filePaths.sort()
 
-  // 检查是否是单个多波段TIF文件
-  if (filePaths.length === 1) {
-    try {
-      const bandCheck = await window.electronAPI.alignment.checkTifBands(filePaths[0])
-      
-      if (bandCheck.success && bandCheck.band_count === 5) {
-        // 单个5波段TIF文件，检查是否是定标后的图像
-        const hasCalibrated = filePaths[0].toLowerCase().includes('reflectance') || 
-                             filePaths[0].toLowerCase().includes('calibrated')
-
-        if (!hasCalibrated) {
-          Modal.confirm({
-            title: t('alignment.warning.title'),
-            content: t('alignment.warning.useRawImages'),
-            okText: t('common.confirm'),
-            cancelText: t('common.cancel'),
-            onOk: () => {
-              proceedWithImages(filePaths)
-            }
-          })
-        } else {
-          proceedWithImages(filePaths)
-        }
-        return
-      } else if (bandCheck.success && bandCheck.band_count !== 5) {
-        message.warning(t('alignment.needFiveBands') + ` (${t('alignment.currentBands')}: ${bandCheck.band_count})`)
-        return
-      }
-    } catch (e) {
-      console.error('Failed to check TIF bands:', e)
-      // 如果检查失败，继续按照多文件处理
-    }
-  }
-
-  // 验证文件：应该是5个单波段TIF文件
-  if (filePaths.length < 5) {
+  // Require exactly five single-band TIF files.
+  if (filePaths.length !== 5) {
     message.warning(t('alignment.needFiveBands'))
     return
   }
 
-  // 检查文件是否来自辐射定标输出
-  const hasCalibrated = filePaths.some(path => 
-    path.toLowerCase().includes('reflectance') || 
+  // Warn when inputs look uncalibrated.
+  const hasCalibrated = filePaths.some(path =>
+    path.toLowerCase().includes('reflectance') ||
     path.toLowerCase().includes('calibrated')
   )
 
@@ -281,11 +248,11 @@ async function handleSelectImages() {
       okText: t('common.confirm'),
       cancelText: t('common.cancel'),
       onOk: () => {
-        proceedWithImages(filePaths.slice(0, 5))
+        proceedWithImages(filePaths)
       }
     })
   } else {
-    proceedWithImages(filePaths.slice(0, 5))
+    proceedWithImages(filePaths)
   }
 }
 
@@ -300,8 +267,8 @@ async function proceedWithImages(filePaths) {
 }
 
 async function handleCompute(options) {
-  // 验证：要么是1个5波段文件，要么是5个单波段文件
-  if (selectedImagePaths.value.length !== 1 && selectedImagePaths.value.length < 5) {
+  // Require exactly 5 single-band inputs.
+  if (selectedImagePaths.value.length !== 5) {
     message.warning(t('alignment.needFiveBands'))
     return
   }
@@ -451,3 +418,7 @@ async function handleDeleteMatrix(id) {
   border-radius: 4px;
 }
 </style>
+
+
+
+

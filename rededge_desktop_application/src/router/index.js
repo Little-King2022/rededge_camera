@@ -1,13 +1,4 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import ConnectView from '../views/ConnectView.vue'
-import PreviewView from '../views/PreviewView.vue'
-import CaptureView from '../views/CaptureView.vue'
-import StatusView from '../views/StatusView.vue'
-import FilesView from '../views/FilesView.vue'
-import SettingsView from '../views/SettingsView.vue'
-import AnalysisView from '../views/AnalysisView.vue'
-import CalibrationView from '../views/CalibrationView.vue'
-import AlignmentView from '../views/AlignmentView.vue'
 
 const routes = [
   {
@@ -17,47 +8,47 @@ const routes = [
   {
     path: '/connect',
     name: 'Connect',
-    component: ConnectView
+    component: () => import('../views/ConnectView.vue')
   },
   {
     path: '/preview',
     name: 'Preview',
-    component: PreviewView
+    component: () => import('../views/PreviewView.vue')
   },
   {
     path: '/capture',
     name: 'Capture',
-    component: CaptureView
+    component: () => import('../views/CaptureView.vue')
   },
   {
     path: '/status',
     name: 'Status',
-    component: StatusView
+    component: () => import('../views/StatusView.vue')
   },
   {
     path: '/files',
     name: 'Files',
-    component: FilesView
+    component: () => import('../views/FilesView.vue')
   },
   {
     path: '/calibration',
     name: 'Calibration',
-    component: CalibrationView
+    component: () => import('../views/CalibrationView.vue')
   },
   {
     path: '/alignment',
     name: 'Alignment',
-    component: AlignmentView
+    component: () => import('../views/AlignmentView.vue')
   },
   {
     path: '/settings',
     name: 'Settings',
-    component: SettingsView
+    component: () => import('../views/SettingsView.vue')
   },
   {
     path: '/analysis',
     name: 'Analysis',
-    component: AnalysisView
+    component: () => import('../views/AnalysisView.vue')
   }
 ]
 

@@ -6,6 +6,32 @@ import router from './router'
 import i18n from './i18n'
 import 'ant-design-vue/dist/reset.css'
 
+if (import.meta.env.DEV) {
+	if (!('dragEvent' in globalThis)) {
+		Object.defineProperty(globalThis, 'dragEvent', {
+			value: null,
+			writable: true,
+			configurable: true
+		})
+	}
+
+	window.addEventListener('error', (event) => {
+		const err = event.error
+		console.error(
+			'[Renderer] Uncaught error:',
+			event.message,
+			event.filename,
+			event.lineno,
+			event.colno,
+			err?.stack
+		)
+	})
+
+	window.addEventListener('unhandledrejection', (event) => {
+		console.error('[Renderer] Unhandled rejection:', event.reason)
+	})
+}
+
 async function bootstrap() {
 	const app = createApp(App)
 	const pinia = createPinia()
