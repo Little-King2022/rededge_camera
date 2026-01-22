@@ -701,5 +701,58 @@ export default {
       content: 'Are you sure you want to delete this warp matrix?'
     },
     deleteSuccess: 'Warp matrix deleted'
+  },
+  statusBar: {
+    version: 'Version',
+    licenseStatus: 'License Status',
+    notActivated: 'Not Activated',
+    messages: {
+      title: 'System Messages',
+      empty: 'No messages',
+      welcome: 'Welcome',
+      welcomeContent: 'Welcome to RedEdge Monitor. Start your multispectral image acquisition and processing work.',
+      systemUpdate: 'System Update',
+      systemUpdateContent: 'System has been updated to the latest version. Check the changelog for new features.',
+      markAllRead: 'Mark All as Read'
+    },
+    help: {
+      title: 'Help Documentation',
+      connect: {
+        title: 'Connection Management',
+        content: '<p>Connection management page is used to configure and manage camera connections.</p><ul><li>Create new camera profiles</li><li>Test camera connection status</li><li>Activate camera profile to use</li><li>Manage multiple camera profiles</li></ul><p>Please ensure the camera is powered on and on the same network as your computer before use.</p>'
+      },
+      preview: {
+        title: 'Live Preview',
+        content: '<p>Live preview page displays real-time camera feed.</p><ul><li>View real-time camera images</li><li>Adjust preview refresh rate</li><li>View preview statistics</li><li>Support band visualization</li></ul><p>Preview function requires an active camera profile.</p>'
+      },
+      capture: {
+        title: 'Capture Control',
+        content: '<p>Capture control page is used to trigger and manage capture tasks.</p><ul><li>Manually trigger single capture</li><li>Set up timer capture tasks</li><li>View recent capture records</li><li>Download or export captured images</li></ul><p>Captured images are saved to the camera SD card and can be downloaded from the Files page.</p>'
+      },
+      files: {
+        title: 'File Management',
+        content: '<p>File management page is used to browse and manage camera files.</p><ul><li>Browse camera SD card files</li><li>Download files to local storage</li><li>Delete camera files</li><li>Manage download queue</li><li>Format SD card</li></ul><p>Downloaded files are saved to the download directory specified in settings.</p>'
+      },
+      status: {
+        title: 'Status Monitoring',
+        content: '<p>Status monitoring page displays detailed camera status information.</p><ul><li>View storage space usage</li><li>View GPS location information</li><li>View DLS light sensor data</li><li>View IMU attitude data</li><li>View camera version and band information</li></ul><p>Status information is automatically refreshed periodically.</p>'
+      },
+      calibration: {
+        title: 'Radiometric Calibration',
+        content: '<p>Radiometric calibration page is used for radiometric calibration processing.</p><ul><li>Detect calibration panel and parse parameters</li><li>Calculate radiometric calibration coefficients</li><li>Save and manage calibration records</li><li>Batch process image calibration</li></ul><p>Calibration requires images taken with a calibration panel and uses Python service for processing.</p>'
+      },
+      alignment: {
+        title: 'Image Alignment',
+        content: '<p>Image alignment page is used for multi-band image alignment.</p><ul><li>Generate warp matrices</li><li>Single image alignment</li><li>Batch image alignment</li><li>Manage warp matrices and job records</li></ul><p>Alignment should be performed on radiometrically calibrated reflectance images for better results.</p>'
+      },
+      settings: {
+        title: 'Settings',
+        content: '<p>Settings page is used to configure application parameters.</p><ul><li>Configure download and preview parameters</li><li>Configure network and proxy settings</li><li>Manage software license</li><li>View software version and help information</li></ul><p>After modifying settings, click the save button to apply changes.</p>'
+      },
+      default: {
+        title: 'Help Documentation',
+        content: '<p>This is the help documentation for RedEdge Monitor.</p><p>Please view detailed instructions for each function on different pages.</p>'
+      }
+    }
   }
 }

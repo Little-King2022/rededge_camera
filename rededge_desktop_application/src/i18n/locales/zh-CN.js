@@ -701,5 +701,59 @@
       content: '确定要删除该配准矩阵吗？'
     },
     deleteSuccess: '配准矩阵已删除'
+  },
+  statusBar: {
+    version: '系统版本',
+    licenseStatus: '授权状态',
+    activated: '已激活',
+    notActivated: '未激活',
+    messages: {
+      title: '系统消息',
+      empty: '暂无消息',
+      welcome: '欢迎使用',
+      welcomeContent: '欢迎使用 RedEdge 监测终端，开始您的多光谱影像采集与处理工作。',
+      systemUpdate: '系统更新',
+      systemUpdateContent: '系统已更新到最新版本，请查看更新日志了解新功能。',
+      markAllRead: '全部标记为已读'
+    },
+    help: {
+      title: '帮助文档',
+      connect: {
+        title: '连接管理',
+        content: '<p>连接管理页面用于配置和管理相机连接。</p><ul><li>创建新的相机配置文件</li><li>测试相机连接状态</li><li>激活要使用的相机配置</li><li>管理多个相机配置</li></ul><p>使用前请确保相机已开机并与计算机在同一网络。</p>'
+      },
+      preview: {
+        title: '实时预览',
+        content: '<p>实时预览页面显示相机实时画面。</p><ul><li>查看相机实时拍摄画面</li><li>调整预览刷新频率</li><li>查看预览统计信息</li><li>支持波段可视化</li></ul><p>预览功能需要先激活相机配置。</p>'
+      },
+      capture: {
+        title: '拍照控制',
+        content: '<p>拍照控制页面用于触发和管理拍照任务。</p><ul><li>手动触发单次拍照</li><li>设置定时拍照任务</li><li>查看最近的拍照记录</li><li>下载或导出拍照图像</li></ul><p>拍照后图像会保存在相机 SD 卡中，可在文件页面下载。</p>'
+      },
+      files: {
+        title: '文件管理',
+        content: '<p>文件管理页面用于浏览和管理相机文件。</p><ul><li>浏览相机 SD 卡文件</li><li>下载文件到本地</li><li>删除相机文件</li><li>管理下载队列</li><li>格式化 SD 卡</li></ul><p>下载的文件会保存在设置中指定的下载目录。</p>'
+      },
+      status: {
+        title: '状态监控',
+        content: '<p>状态监控页面显示相机详细状态信息。</p><ul><li>查看存储空间使用情况</li><li>查看 GPS 定位信息</li><li>查看 DLS 光照传感器数据</li><li>查看 IMU 姿态数据</li><li>查看相机版本和波段信息</li></ul><p>状态信息会定时自动刷新。</p>'
+      },
+      calibration: {
+        title: '辐射定标',
+        content: '<p>辐射定标页面用于进行辐射定标处理。</p><ul><li>检测定标板并解析参数</li><li>计算辐射定标系数</li><li>保存和管理定标记录</li><li>批量处理图像定标</li></ul><p>定标前需要使用定标板拍摄图像，并使用 Python 服务进行处理。</p>'
+      },
+      alignment: {
+        title: '影像配准',
+        content: '<p>影像配准页面用于多波段影像配准。</p><ul><li>生成配准矩阵</li><li>单张影像配准</li><li>批量影像配准</li><li>管理配准矩阵和任务记录</li></ul><p>配准应基于辐射定标后的反射率影像进行，以获得更好的效果。</p>'
+      },
+      settings: {
+        title: '设置',
+        content: '<p>设置页面用于配置应用程序参数。</p><ul><li>配置下载和预览参数</li><li>配置网络和代理设置</li><li>管理软件授权</li><li>查看软件版本和帮助信息</li></ul><p>修改设置后需要点击保存按钮使设置生效。</p>'
+      },
+      default: {
+        title: '帮助文档',
+        content: '<p>这是 RedEdge 监测终端的帮助文档。</p><p>请在不同页面查看对应功能的详细说明。</p>'
+      }
+    }
   }
 }

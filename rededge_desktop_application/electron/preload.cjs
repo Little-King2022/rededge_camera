@@ -174,6 +174,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     cancel: (jobId) => ipcRenderer.invoke('batch:cancel', jobId),
     // 获取任务历史
     getJobHistory: (limit) => ipcRenderer.invoke('batch:getJobHistory', limit)
+  },
+
+  // System Info APIs
+  system: {
+    getInfo: () => ipcRenderer.invoke('system:getInfo'),
+    getVersion: () => ipcRenderer.invoke('system:getVersion')
   }
 })
 

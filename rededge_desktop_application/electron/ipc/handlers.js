@@ -1,6 +1,7 @@
 import { ipcMain, app, dialog, shell, BrowserWindow } from 'electron'
 import fs from 'fs/promises'
 import path from 'path'
+import os from 'os'
 import { fileURLToPath, pathToFileURL } from 'url'
 import database from '../services/database.js'
 import CameraApiClient from '../services/camera-api.js'
@@ -936,6 +937,56 @@ export function registerIPCHandlers() {
 
   ipcMain.handle('batch:getJobHistory', async (event, limit = 20) => {
     return database.getRecentBatchJobs(limit)
+  })
+
+  // ========== System Info Handlers ==========
+
+  // CPU使用率计算（需要在两次调用之间计算差值）
+  let lastCpuInfo = null
+
+  ipcMain.handle('system:getInfo', async () => {
+    const totalMem = os.totalmem()
+    const freeMem = os.freemem()
+    const usedMem = totalMem - freeMem
+
+    // CPU使用率计算
+    const cpus = os.cpus()
+    const currentCpuInfo = cpus.map(cpu => ({
+      idle: cpu.times.idle,
+      total: Object.values(cpu.times).reduce((a, b) => a + b, 0)
+    }))
+
+    let cpuUsage = 0
+    if (lastCpuInfo) {
+      let totalIdle = 0
+      let totalTick = 0
+      for (let i = 0; i < currentCpuInfo.length; i++) {
+        const idle = currentCpuInfo[i].idle - lastCpuInfo[i].idle
+        const total = currentCpuInfo[i].total - lastCpuInfo[i].total
+        totalIdle += idle
+        totalTick += total
+      }
+      cpuUsage = 100 - (100 * totalIdle / totalTick)
+    }
+
+    lastCpuInfo = currentCpuInfo
+
+    return {
+      memory: {
+        total: totalMem,
+        used: usedMem,
+        free: freeMem,
+        usagePercent: (usedMem / totalMem) * 100
+      },
+      cpu: {
+        usage: cpuUsage,
+        cores: cpus.length
+      }
+    }
+  })
+
+  ipcMain.handle('system:getVersion', async () => {
+    return app.getVersion()
   })
 
   console.log('[IPC] IPC handlers registered successfully')

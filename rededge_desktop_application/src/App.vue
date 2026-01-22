@@ -56,6 +56,9 @@
             </transition>
           </router-view>
         </a-layout-content>
+
+        <!-- Status Bar -->
+        <StatusBar />
       </a-layout>
     </div>
   </a-config-provider>
@@ -69,6 +72,7 @@ import { Modal } from 'ant-design-vue'
 import { BorderOutlined, CloseOutlined, MinusOutlined } from '@ant-design/icons-vue'
 import enUS from 'ant-design-vue/es/locale/en_US'
 import zhCN from 'ant-design-vue/es/locale/zh_CN'
+import StatusBar from './components/StatusBar.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -231,6 +235,7 @@ body::-webkit-scrollbar {
   padding: 24px;
   background: #f5f5f5;
   padding-top: 88px;
+  padding-bottom: 60px; /* 为36px状态栏留出空间 */
 }
 
 /* Fade transition */
