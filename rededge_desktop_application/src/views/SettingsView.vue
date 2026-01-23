@@ -3,11 +3,7 @@
     <a-row :gutter="16">
       <a-col :span="6">
         <a-card class="sidebar-card" :title="t('settings.sidebarTitle')">
-          <a-menu
-            mode="inline"
-            :selectedKeys="[activeSection]"
-            @click="handleSectionChange"
-          >
+          <a-menu mode="inline" :selectedKeys="[activeSection]" @click="handleSectionChange">
             <a-menu-item key="general">{{ t('settings.menu.general') }}</a-menu-item>
             <a-menu-item key="network">{{ t('settings.menu.network') }}</a-menu-item>
             <a-menu-item key="license">{{ t('settings.menu.license') }}</a-menu-item>
@@ -17,7 +13,7 @@
       </a-col>
 
       <a-col :span="18">
-        <a-card :title="t('settings.appSettingsTitle')" class="main-card">
+        <a-card :title="sectionTitle" class="main-card">
           <template #extra v-if="activeSection === 'general' || activeSection === 'network'">
             <a-space>
               <a-button @click="loadSettings">
@@ -30,29 +26,22 @@
           </template>
 
           <a-form layout="vertical" @submit.prevent="handleSave">
-            
+
             <!-- 1-General Settings -->
             <div v-show="activeSection === 'general'">
               <!-- Download Settings -->
               <a-card size="small" :title="t('settings.general.downloadTitle')" class="settings-section">
                 <a-form-item :label="t('settings.general.downloadDir')">
-                  <a-input
-                    v-model:value="settings.download_directory"
-                    :placeholder="t('settings.general.downloadDirPlaceholder')"
-                  />
+                  <a-input v-model:value="settings.download_directory"
+                    :placeholder="t('settings.general.downloadDirPlaceholder')" />
                   <template #extra>
                     {{ t('settings.general.downloadDirExtra') }}
                   </template>
                 </a-form-item>
 
                 <a-form-item :label="t('settings.general.concurrent')">
-                  <a-input-number
-                    v-model:value="settings.download_max_concurrent"
-                    :min="1"
-                    :max="5"
-                    :step="1"
-                    style="width: 200px"
-                  />
+                  <a-input-number v-model:value="settings.download_max_concurrent" :min="1" :max="5" :step="1"
+                    style="width: 200px" />
                   <template #extra>
                     {{ t('settings.general.concurrentExtra') }}
                   </template>
@@ -62,13 +51,8 @@
               <!-- Preview Settings -->
               <a-card size="small" :title="t('settings.general.previewTitle')" class="settings-section mt-3">
                 <a-form-item :label="t('settings.general.previewRate')">
-                  <a-input-number
-                    v-model:value="settings.preview_refresh_rate"
-                    :min="0.1"
-                    :max="5"
-                    :step="0.1"
-                    style="width: 200px"
-                  />
+                  <a-input-number v-model:value="settings.preview_refresh_rate" :min="0.1" :max="5" :step="0.1"
+                    style="width: 200px" />
                   <template #extra>
                     {{ t('settings.general.previewExtra') }}
                   </template>
@@ -78,13 +62,8 @@
               <!-- Status Settings -->
               <a-card size="small" :title="t('settings.general.statusTitle')" class="settings-section mt-3">
                 <a-form-item :label="t('settings.general.statusRate')">
-                  <a-input-number
-                    v-model:value="settings.status_refresh_rate"
-                    :min="1"
-                    :max="60"
-                    :step="1"
-                    style="width: 200px"
-                  />
+                  <a-input-number v-model:value="settings.status_refresh_rate" :min="1" :max="60" :step="1"
+                    style="width: 200px" />
                   <template #extra>
                     {{ t('settings.general.statusExtra') }}
                   </template>
@@ -94,11 +73,8 @@
               <!-- Logging Settings -->
               <a-card size="small" :title="t('settings.general.loggingTitle')" class="settings-section mt-3">
                 <a-form-item :label="t('settings.general.enableLogging')">
-                  <a-switch
-                    v-model:checked="settings.enable_logging"
-                    :checked-children="t('common.on')"
-                    :un-checked-children="t('common.off')"
-                  />
+                  <a-switch v-model:checked="settings.enable_logging" :checked-children="t('common.on')"
+                    :un-checked-children="t('common.off')" />
                   <template #extra>
                     {{ t('settings.general.loggingExtra') }}
                   </template>
@@ -108,10 +84,7 @@
               <!-- Language Settings -->
               <a-card size="small" :title="t('settings.general.languageTitle')" class="settings-section mt-3">
                 <a-form-item :label="t('settings.general.languageLabel')">
-                  <a-select
-                    v-model:value="settings.language"
-                    style="width: 240px"
-                  >
+                  <a-select v-model:value="settings.language" style="width: 240px">
                     <a-select-option value="en-US">{{ t('settings.languageOptions.en') }}</a-select-option>
                     <a-select-option value="zh-CN">{{ t('settings.languageOptions.zh') }}</a-select-option>
                   </a-select>
@@ -123,13 +96,8 @@
             <div v-show="activeSection === 'network'">
               <a-card size="small" :title="t('settings.network.title')" class="settings-section mt-3">
                 <a-form-item :label="t('settings.network.timeout')">
-                  <a-input-number
-                    v-model:value="settings.request_timeout"
-                    :min="5000"
-                    :max="120000"
-                    :step="1000"
-                    style="width: 200px"
-                  />
+                  <a-input-number v-model:value="settings.request_timeout" :min="5000" :max="120000" :step="1000"
+                    style="width: 200px" />
                   <template #extra>
                     {{ t('settings.network.timeoutExtra') }}
                   </template>
@@ -137,24 +105,16 @@
               </a-card>
               <a-card size="small" :title="t('settings.network.proxyTitle')" class="settings-section mt-3">
                 <a-form-item :label="t('settings.network.enableProxy')">
-                  <a-switch
-                    v-model:checked="settings.camera_proxy_enabled"
-                    :checked-children="t('common.on')"
-                    :un-checked-children="t('common.off')"
-                  />
+                  <a-switch v-model:checked="settings.camera_proxy_enabled" :checked-children="t('common.on')"
+                    :un-checked-children="t('common.off')" />
                   <template #extra>
                     {{ t('settings.network.proxyExtra') }}
                   </template>
                 </a-form-item>
 
-                <a-form-item
-                  v-if="settings.camera_proxy_enabled"
-                  :label="t('settings.network.proxyUrl')"
-                >
-                  <a-input
-                    v-model:value="settings.camera_proxy_url"
-                    :placeholder="t('settings.network.proxyPlaceholder')"
-                  />
+                <a-form-item v-if="settings.camera_proxy_enabled" :label="t('settings.network.proxyUrl')">
+                  <a-input v-model:value="settings.camera_proxy_url"
+                    :placeholder="t('settings.network.proxyPlaceholder')" />
                   <template #extra>
                     {{ t('settings.network.proxyUrlExtra', { example: 'http://user:pass@proxy-host:8080' }) }}
                   </template>
@@ -162,124 +122,90 @@
               </a-card>
             </div>
 
-            <!-- 3-Software License -->
+            <!-- 4-Software License -->
             <div v-show="activeSection === 'license'">
               <!-- License Status -->
               <a-row :gutter="16">
                 <a-col :span="12">
                   <a-card size="small" :title="t('settings.license.currentStatus')">
-                    <a-result
-                      :status="getStatusIcon()"
-                      :title="getStatusTitle()"
-                      :sub-title="getStatusDescription()"
-                    >
+                    <a-result :status="getStatusIcon()" :title="getStatusTitle()" :sub-title="getStatusDescription()">
                       <template #extra v-if="licenseStore.isTrial">
-                        <a-statistic
-                          :title="t('settings.license.trialDays')"
-                          :value="licenseStore.trialDaysRemaining"
-                          :suffix="t('common.days')"
-                          :valueStyle="getTrialStyle()"
-                        />
+                        <a-statistic :title="t('settings.license.trialDays')" :value="licenseStore.trialDaysRemaining"
+                          :suffix="t('common.days')" :valueStyle="getTrialStyle()" />
                       </template>
-                  </a-result>
-                </a-card>
-              </a-col>
+                    </a-result>
+                  </a-card>
+                </a-col>
 
-              <a-col :span="12">
-                <a-card size="small" :title="t('settings.license.licenseInfo')">
-                  <a-descriptions :column="1" size="small" v-if="licenseStore.licenseInfo">
-                    <a-descriptions-item :label="t('settings.license.licenseStatus')">
-                      <a-tag :color="getStatusColor()">
-                        {{ formatLicenseStatus(licenseStore.licenseInfo.status) }}
-                      </a-tag>
-                    </a-descriptions-item>
+                <a-col :span="12">
+                  <a-card size="small" :title="t('settings.license.licenseInfo')">
+                    <a-descriptions :column="1" size="small" v-if="licenseStore.licenseInfo">
+                      <a-descriptions-item :label="t('settings.license.licenseStatus')">
+                        <a-tag :color="getStatusColor()">
+                          {{ formatLicenseStatus(licenseStore.licenseInfo.status) }}
+                        </a-tag>
+                      </a-descriptions-item>
 
-                    <a-descriptions-item :label="t('settings.license.expiryDate')" v-if="licenseStore.licenseInfo.expiry_at">
-                      {{ formatDate(licenseStore.licenseInfo.expiry_at) }}
-                    </a-descriptions-item>
+                      <a-descriptions-item :label="t('settings.license.expiryDate')"
+                        v-if="licenseStore.licenseInfo.expiry_at">
+                        {{ formatDate(licenseStore.licenseInfo.expiry_at) }}
+                      </a-descriptions-item>
 
-                    <!-- <a-descriptions-item label="Device Fingerprint">
+                      <!-- <a-descriptions-item label="Device Fingerprint">
                       <code style="font-size: 11px">{{ licenseStore.licenseInfo.device_fingerprint?.substring(0, 16) }}...</code>
                     </a-descriptions-item> -->
 
-                    <!-- <a-descriptions-item label="Last Check" v-if="licenseStore.licenseInfo.last_check_at">
+                      <!-- <a-descriptions-item label="Last Check" v-if="licenseStore.licenseInfo.last_check_at">
                       {{ formatDate(licenseStore.licenseInfo.last_check_at) }}
                     </a-descriptions-item> -->
-                  </a-descriptions>
+                    </a-descriptions>
 
-                  <!-- User Information (if activated) -->
-                  <a-divider v-if="licenseStore.isActivated && licenseStore.licenseInfo.user" />
-                  <a-descriptions
-                    v-if="licenseStore.isActivated && licenseStore.licenseInfo.user"
-                    :title="t('settings.license.userInfo')"
-                    :column="1"
-                    size="small"
-                  >
-                    <a-descriptions-item :label="t('settings.license.name')">
-                      {{ licenseStore.licenseInfo.user.name }}
-                    </a-descriptions-item>
-                    <a-descriptions-item :label="t('settings.license.org')" v-if="licenseStore.licenseInfo.user.org">
-                      {{ licenseStore.licenseInfo.user.org }}
-                    </a-descriptions-item>
-                    <a-descriptions-item :label="t('settings.license.contact')" v-if="licenseStore.licenseInfo.user.contact">
-                      {{ licenseStore.licenseInfo.user.contact }}
-                    </a-descriptions-item>
-                  </a-descriptions>
-                </a-card>
-              </a-col>
+                    <!-- User Information (if activated) -->
+                    <a-divider v-if="licenseStore.isActivated && licenseStore.licenseInfo.user" />
+                    <a-descriptions v-if="licenseStore.isActivated && licenseStore.licenseInfo.user"
+                      :title="t('settings.license.userInfo')" :column="1" size="small">
+                      <a-descriptions-item :label="t('settings.license.name')">
+                        {{ licenseStore.licenseInfo.user.name }}
+                      </a-descriptions-item>
+                      <a-descriptions-item :label="t('settings.license.org')" v-if="licenseStore.licenseInfo.user.org">
+                        {{ licenseStore.licenseInfo.user.org }}
+                      </a-descriptions-item>
+                      <a-descriptions-item :label="t('settings.license.contact')"
+                        v-if="licenseStore.licenseInfo.user.contact">
+                        {{ licenseStore.licenseInfo.user.contact }}
+                      </a-descriptions-item>
+                    </a-descriptions>
+                  </a-card>
+                </a-col>
               </a-row>
 
               <!-- Activation Section -->
               <a-row :gutter="16" class="mt-3" v-if="!licenseStore.isActivated">
                 <a-col :span="24">
                   <a-card size="small" :title="t('settings.license.activateTitle')">
-                    <a-alert
-                      v-if="licenseStore.isTrial"
+                    <a-alert v-if="licenseStore.isTrial"
                       :message="t('settings.license.trialAlert', { days: licenseStore.trialDaysRemaining })"
-                      :description="t('settings.license.trialDesc')"
-                      type="info"
-                      show-icon
-                      class="mb-3"
-                    />
+                      :description="t('settings.license.trialDesc')" type="info" show-icon class="mb-3" />
 
-                    <a-alert
-                      v-if="licenseStore.isExpired"
-                      :message="t('settings.license.expiredTitle')"
-                      :description="t('settings.license.expiredDesc')"
-                      type="error"
-                      show-icon
-                      class="mb-3"
-                    />
+                    <a-alert v-if="licenseStore.isExpired" :message="t('settings.license.expiredTitle')"
+                      :description="t('settings.license.expiredDesc')" type="error" show-icon class="mb-3" />
 
                     <a-form layout="vertical" @submit.prevent="handleActivate">
                       <a-form-item :label="t('settings.license.activationCode')" required>
-                        <a-input
-                          v-model:value="activationCode"
-                          :placeholder="t('settings.license.activationPlaceholder')"
-                          size="large"
-                          :disabled="licenseStore.isLoading"
-                        />
+                        <a-input v-model:value="activationCode"
+                          :placeholder="t('settings.license.activationPlaceholder')" size="large"
+                          :disabled="licenseStore.isLoading" />
                       </a-form-item>
 
                       <a-form-item>
-                        <a-button
-                          type="primary"
-                          html-type="submit"
-                          size="large"
-                          :loading="licenseStore.isLoading"
-                          :disabled="!activationCode"
-                        >
+                        <a-button type="primary" html-type="submit" size="large" :loading="licenseStore.isLoading"
+                          :disabled="!activationCode">
                           {{ t('settings.license.activateButton') }}
                         </a-button>
                       </a-form-item>
 
-                      <a-alert
-                        v-if="activationError"
-                        :message="activationError"
-                        type="error"
-                        closable
-                        @close="activationError = null"
-                      />
+                      <a-alert v-if="activationError" :message="activationError" type="error" closable
+                        @close="activationError = null" />
                     </a-form>
                   </a-card>
                 </a-col>
@@ -293,11 +219,12 @@
                   </a-button>
                 </a-col>
               </a-row>
-              
+
             </div>
 
-            <!-- 4-About & Help -->
+            <!-- 5-About & Help -->
             <div v-show="activeSection === 'about'">
+              <!-- 5-1 Software Version -->
               <a-card size="small" :title="t('settings.about.versionTitle')" class="settings-section">
                 <a-descriptions :column="1" size="small">
                   <a-descriptions-item :label="t('settings.about.appVersion')">
@@ -307,8 +234,18 @@
                     {{ buildTime }}
                   </a-descriptions-item>
                 </a-descriptions>
+                <a-button type="primary" :loading="updateInfo.checking" @click="handleCheckUpdate">
+                  {{ t('settings.update.checkUpdate') }}
+                </a-button>
               </a-card>
 
+              <!-- 5-2 Software Update Log -->
+              <a-card size="small" :title="t('settings.update.releaseNotes')" v-if="updateInfo.releaseNotes"
+                class="settings-section mt-3">
+                <div v-html="updateInfo.releaseNotes" style="max-height: 300px; overflow-y: auto;"></div>
+              </a-card>
+
+              <!-- 5-3 Support Information -->
               <a-card size="small" :title="t('settings.about.companyName')" class="settings-section mt-3">
                 <a-space direction="vertical">
                   <div>
@@ -342,7 +279,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { useLicenseStore } from '../stores/license'
 import { useI18n } from 'vue-i18n'
@@ -352,6 +289,17 @@ const { t, locale } = useI18n()
 
 const activationCode = ref('')
 const activationError = ref(null)
+
+// 系统更新相关
+const updateInfo = ref({
+  checking: false,
+  hasUpdate: false,
+  latestVersion: '',
+  currentVersion: import.meta.env.VITE_APP_VERSION || '1.0.1',
+  releaseNotes: '',
+  lastCheckTime: null,
+  error: null
+})
 
 const settings = ref({
   download_directory: '',
@@ -367,6 +315,15 @@ const settings = ref({
 
 const isSaving = ref(false)
 const activeSection = ref('general')
+const sectionTitle = computed(() => {
+  const titleMap = {
+    general: t('settings.menu.general'),
+    network: t('settings.menu.network'),
+    license: t('settings.menu.license'),
+    about: t('settings.menu.about')
+  }
+  return titleMap[activeSection.value] || t('settings.appSettingsTitle')
+})
 const appVersion = import.meta.env.VITE_APP_VERSION || 'Unknown'
 const buildTime = import.meta.env.VITE_BUILD_TIME || 'Unknown'
 const docUrl = 'https://micasense.github.io/rededge-api/'
@@ -552,7 +509,53 @@ function formatLicenseStatus(status) {
   return status
 }
 
-// Language takes effect after saving settings
+// 检查更新
+async function handleCheckUpdate() {
+  updateInfo.value.checking = true
+  updateInfo.value.error = null
+
+  try {
+    // TODO: 替换为真实的更新检查API
+    // const response = await window.electronAPI?.update?.check?.()
+
+    // Mock: 模拟服务器响应延迟
+    await new Promise(resolve => setTimeout(resolve, 1500))
+
+    // Mock: 当前为最新版
+    const mockResponse = {
+      hasUpdate: false,
+      latestVersion: updateInfo.value.currentVersion,
+      releaseNotes: `
+        <h4>v${updateInfo.value.currentVersion}</h4>
+        <ul>
+          <li>新增系统更新功能</li>
+          <li>优化界面响应速度</li>
+          <li>修复已知问题</li>
+        </ul>
+      `
+    }
+
+    updateInfo.value.hasUpdate = mockResponse.hasUpdate
+    updateInfo.value.latestVersion = mockResponse.latestVersion
+    updateInfo.value.releaseNotes = mockResponse.releaseNotes
+    updateInfo.value.lastCheckTime = new Date().toISOString()
+
+    if (mockResponse.hasUpdate) {
+      message.warning(t('settings.update.messages.newVersionAvailable', {
+        version: mockResponse.latestVersion
+      }))
+    } else {
+      message.success(t('settings.update.messages.upToDate', {
+        version: updateInfo.value.currentVersion
+      }))
+    }
+  } catch (error) {
+    updateInfo.value.error = error.message || 'Unknown error'
+    message.error(t('settings.update.messages.checkFailed', { error: error.message }))
+  } finally {
+    updateInfo.value.checking = false
+  }
+}
 </script>
 
 <style scoped>

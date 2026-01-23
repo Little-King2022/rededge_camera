@@ -321,7 +321,7 @@
       general: '通用设置',
       network: '网络设置',
       license: '软件授权',
-      about: '关于与帮助'
+      about: '更新与帮助'
     },
     appSettingsTitle: '应用设置',
     general: {
@@ -354,6 +354,22 @@
       proxyPlaceholder: '请输入有效的 HTTP/HTTPS 代理地址',
       proxyUrlExtra: '支持 http/https 代理，例如：{example}',
       proxyUrlInvalid: '请输入有效的 HTTP/HTTPS 代理地址'
+    },
+    update: {
+      title: '系统更新',
+      checkUpdate: '检查更新',
+      checking: '正在检查更新...',
+      upToDate: '已是最新版本',
+      updateAvailable: '发现新版本',
+      releaseNotes: '更新日志',
+      messages: {
+        checkSuccess: '检查更新完成',
+        checkFailed: '检查更新失败：{error}',
+        upToDate: '当前已是最新版本 v{version}',
+        newVersionAvailable: '发现新版本 v{version}',
+        downloadSuccess: '下载完成',
+        downloadFailed: '下载失败：{error}'
+      }
     },
     license: {
       currentStatus: '当前状态',

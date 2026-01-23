@@ -355,6 +355,22 @@ export default {
       proxyUrlExtra: 'Supports http/https proxies, e.g., {example}',
       proxyUrlInvalid: 'Please enter a valid HTTP/HTTPS proxy URL'
     },
+    update: {
+      title: 'System Update',
+      checkUpdate: 'Check for Updates',
+      checking: 'Checking for updates...',
+      upToDate: 'Up to date',
+      updateAvailable: 'Update Available',
+      releaseNotes: 'Release Notes',
+      messages: {
+        checkSuccess: 'Update check completed',
+        checkFailed: 'Update check failed: {error}',
+        upToDate: 'You are using the latest version v{version}',
+        newVersionAvailable: 'New version available: v{version}',
+        downloadSuccess: 'Download completed',
+        downloadFailed: 'Download failed: {error}'
+      }
+    },
     license: {
       currentStatus: 'Current Status',
       trialDays: 'Trial Days Remaining',
