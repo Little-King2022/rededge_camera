@@ -40,7 +40,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Preview APIs
   preview: {
-    getFrame: () => ipcRenderer.invoke('preview:getFrame')
+    getFrame: () => ipcRenderer.invoke('preview:getFrame'),
+    stopStream: () => ipcRenderer.invoke('preview:stopStream')
   },
 
   // Download APIs

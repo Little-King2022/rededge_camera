@@ -34,8 +34,8 @@
 
       <!-- Preview Settings -->
       <a-row :gutter="16" class="mb-3">
-        <a-col :span="8">
-          <a-card size="small" :title="t('preview.settingsTitle')">
+        <a-col :span="8" class="settings-col">
+          <a-card size="small" :title="t('preview.settingsTitle')" class="full-height-card">
             <a-form layout="vertical" size="small">
               <a-form-item :label="t('preview.refreshRate')">
                 <a-input-number
@@ -51,8 +51,8 @@
           </a-card>
         </a-col>
 
-        <a-col :span="16">
-          <a-card size="small" :title="t('preview.statsTitle')">
+        <a-col :span="16" class="settings-col">
+          <a-card size="small" :title="t('preview.statsTitle')" class="full-height-card">
             <a-descriptions :column="2" size="small">
               <a-descriptions-item :label="t('preview.statusLabel')">
                 <a-tag :color="isPlaying ? 'green' : 'default'">
@@ -189,6 +189,10 @@ async function startPreview() {
 function stopPreview() {
   isPlaying.value = false
 
+  window.electronAPI.preview.stopStream().catch((err) => {
+    console.warn('[Preview] Failed to stop streaming:', err)
+  })
+
   // Clear all timers
   if (intervalId) {
     clearInterval(intervalId)
@@ -288,6 +292,21 @@ function formatBytes(bytes) {
 
 .mt-3 {
   margin-top: 16px;
+}
+
+.settings-col {
+  display: flex;
+}
+
+.full-height-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 125px;
+}
+
+.full-height-card :deep(.ant-card-body) {
+  flex: 1;
 }
 
 .preview-container {

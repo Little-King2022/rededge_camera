@@ -291,6 +291,11 @@ export function registerIPCHandlers() {
     return await cameraApi.getOneTimePreviewFrame()
   })
 
+  ipcMain.handle('preview:stopStream', async () => {
+    const cameraApi = getActiveCameraApi()
+    return await cameraApi.stopPreviewStreaming()
+  })
+
   // ========== File Management Handlers ==========
 
   ipcMain.handle('camera:listFiles', async (event, remotePath) => {

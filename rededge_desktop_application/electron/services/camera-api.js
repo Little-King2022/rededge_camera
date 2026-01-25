@@ -239,7 +239,7 @@ class CameraApiClient {
           // Only treat unexpected failures as fatal if Step 1/2 fails later.
           console.warn('[CameraApiClient] Failed to enable streaming via /config:', error.message)
           // Mark as enabled anyway to avoid retrying on every frame
-          this.streamingEnabled = true
+          this.streamingEnabled = false
         }
       }
 
@@ -267,6 +267,35 @@ class CameraApiClient {
       console.error('[CameraApiClient] Failed to fetch preview frame:', error.message)
       throw error
     }
+  }
+
+  async stopPreviewStreaming() {
+    if (!this.streamingEnabled) {
+      return { stopped: false }
+    }
+
+    try {
+      await this.requestJson(
+        'POST',
+        '/config',
+        null,
+        { streaming_enable: 'false' },
+        {
+          form: true,
+          timeout: 5000,
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+          }
+        }
+      )
+      console.log('[CameraApiClient] Streaming disabled successfully')
+    } catch (error) {
+      console.warn('[CameraApiClient] Failed to disable streaming via /config:', error.message)
+    } finally {
+      this.streamingEnabled = false
+    }
+
+    return { stopped: true }
   }
 
   /**
