@@ -20,6 +20,9 @@
       </template>
     </a-alert>
 
+    <!-- Workflow Info Alert -->
+    <WorkflowInfo />
+
     <a-tabs v-model:activeKey="activeTab" class="main-tabs">
       <!-- Tab 1: Radiometric Calibration -->
       <a-tab-pane key="calibration" :tab="t('calibration.tabs.calibration')">
@@ -157,6 +160,7 @@ import CalibrationSaveForm from '../components/calibration/CalibrationSaveForm.v
 import CalibrationDetails from '../components/calibration/CalibrationDetails.vue'
 import BatchConfigForm from '../components/calibration/BatchConfigForm.vue'
 import BatchProgressCard from '../components/calibration/BatchProgressCard.vue'
+import WorkflowInfo from '../components/WorkflowInfo.vue'
 
 const { t } = useI18n()
 const calibrationStore = useCalibrationStore()
@@ -439,7 +443,7 @@ async function handleCancelBatch() {
 }
 
 .service-alert {
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
 .main-tabs {

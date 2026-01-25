@@ -21,24 +21,7 @@
     </a-alert>
 
     <!-- Workflow Info Alert -->
-    <a-alert
-      type="info"
-      show-icon
-      class="workflow-alert"
-      closable
-    >
-      <template #message>
-        <strong>{{ t('alignment.workflow.title') }}</strong>
-      </template>
-      <template #description>
-        <div>{{ t('alignment.workflow.step1') }}</div>
-        <div>{{ t('alignment.workflow.step2') }}</div>
-        <div class="workflow-note">
-          <InfoCircleOutlined />
-          {{ t('alignment.workflow.note') }}
-        </div>
-      </template>
-    </a-alert>
+    <WorkflowInfo />
 
     <a-tabs v-model:activeKey="activeTab" class="main-tabs">
       <!-- Tab 1: Generate Warp Matrices -->
@@ -167,6 +150,7 @@ import AlignmentProgress from '../components/alignment/AlignmentProgress.vue'
 import AlignmentPreview from '../components/alignment/AlignmentPreview.vue'
 import WarpMatrixTable from '../components/alignment/WarpMatrixTable.vue'
 import AlignmentJobTable from '../components/alignment/AlignmentJobTable.vue'
+import WorkflowInfo from '../components/WorkflowInfo.vue'
 
 const { t } = useI18n()
 const alignmentStore = useAlignmentStore()
@@ -393,23 +377,7 @@ async function handleDeleteMatrix(id) {
 }
 
 .service-alert {
-  margin-bottom: 16px;
-}
-
-.workflow-alert {
-  margin-bottom: 16px;
-}
-
-.workflow-note {
-  margin-top: 8px;
-  padding: 8px;
-  background: #f0f5ff;
-  border-radius: 4px;
-  color: #1890ff;
-}
-
-.workflow-note :deep(.anticon) {
-  margin-right: 8px;
+  margin-bottom: 8px;
 }
 
 .main-tabs {
