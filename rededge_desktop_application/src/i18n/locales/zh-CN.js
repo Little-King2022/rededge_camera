@@ -177,7 +177,7 @@
     },
     messages: {
       noActiveProfile: '未激活相机配置',
-      captureInitiatedToast: '拍照已触发：{id}',
+      captureInitiatedToast: '拍照已触发',
       captureFailed: '拍照失败：{error}',
       timerNotSupported: '相机不支持定时模式',
       timerStarted: '定时启动成功',
@@ -186,7 +186,7 @@
       timerStopFailed: '停止定时失败：{error}',
       selectedDeleted: '已删除所选拍照记录',
       exportCanceled: '导出已取消',
-      exportSuccess: '已导出到：{directory}',
+      exportSuccess: 'PNG预览图像已导出到：{directory}，TIF原始图像需从文件页面下载',
       exportFailed: '导出失败',
       exportFailedDetail: '导出失败：{error}',
       invalidTiff: '无效的 TIFF 数据',

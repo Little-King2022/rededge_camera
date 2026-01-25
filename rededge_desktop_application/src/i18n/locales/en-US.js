@@ -177,7 +177,7 @@ export default {
     },
     messages: {
       noActiveProfile: 'No active camera profile',
-      captureInitiatedToast: 'Capture initiated: {id}',
+      captureInitiatedToast: 'Capture initiated',
       captureFailed: 'Capture failed: {error}',
       timerNotSupported: 'Timer mode not supported by camera',
       timerStarted: 'Timer started successfully',
@@ -186,7 +186,7 @@ export default {
       timerStopFailed: 'Failed to stop timer: {error}',
       selectedDeleted: 'Selected captures deleted',
       exportCanceled: 'Export canceled',
-      exportSuccess: 'Exported to: {directory}',
+      exportSuccess: 'PNG preview exported to: {directory}, TIF raw images need to be downloaded from the Files page',
       exportFailed: 'Export failed',
       exportFailedDetail: 'Export failed: {error}',
       invalidTiff: 'Invalid TIFF data',

@@ -2,116 +2,61 @@
   <div class="capture-view">
     <a-row :gutter="16">
       <!-- Manual Capture -->
-      <a-col :span="12">
-        <a-card :title="t('capture.manualTitle')" class="card">
-          <a-alert
-            v-if="!cameraStore.hasActiveProfile"
-            :message="t('capture.noActiveTitle')"
-            type="warning"
-            show-icon
-            class="mb-3"
-          />
+      <a-col :span="12" class="capture-col">
+        <a-card :title="t('capture.manualTitle')" class="card full-height-card">
+          <a-alert v-if="!cameraStore.hasActiveProfile" :message="t('capture.noActiveTitle')" type="warning" show-icon
+            class="mb-3" />
 
-          <a-button
-            type="primary"
-            size="large"
-            @click="handleManualCapture"
-            :loading="manualCaptureLoading"
-            :disabled="!cameraStore.hasActiveProfile"
-            block
-          >
+          <a-button type="primary" size="large" @click="handleManualCapture" :loading="manualCaptureLoading"
+            :disabled="!cameraStore.hasActiveProfile" block>
             {{ t('capture.captureNow') }}
           </a-button>
 
           <div v-if="lastCaptureId" class="capture-result mt-3">
-            <a-alert
-              :message="t('capture.captureInitiated')"
-              :description="t('capture.captureId', { id: lastCaptureId })"
-              type="success"
-              show-icon
-            />
+            <a-alert :message="t('capture.captureInitiated')"
+              :description="t('capture.captureId', { id: lastCaptureId })" type="success" show-icon />
 
-            <!-- <div class="mt-2">
-              <a-space>
-                <a-tag v-if="capturePolling" color="processing">{{ t('capture.polling') }}</a-tag>
-                <a-tag v-else-if="captureStatus?.status === 'complete'" color="success">{{ t('capture.complete') }}</a-tag>
-                <a-tag v-else-if="captureStatus?.status" color="warning">{{ formatCaptureStatus(captureStatus.status) }}</a-tag>
-                <a-tag v-else color="default">{{ t('capture.pending') }}</a-tag>
-              </a-space>
-            </div> -->
-
-            <a-alert
-              v-if="capturePollError"
-              class="mt-2"
-              type="error"
-              show-icon
-              :message="capturePollError"
-            />
+            <a-alert v-if="capturePollError" class="mt-2" type="error" show-icon :message="capturePollError" />
           </div>
         </a-card>
       </a-col>
 
       <!-- Camera-Side Timer Capture -->
-      <a-col :span="12">
-        <a-card :title="t('capture.timerTitle')" class="card">
-          <a-alert
-            v-if="!capabilities.timer"
-            :message="t('capture.timerNotSupported')"
-            :description="t('capture.timerNotSupportedDesc')"
-            type="warning"
-            show-icon
-            class="mb-3"
-          />
+      <a-col :span="12" class="capture-col">
+        <a-card :title="t('capture.timerTitle')" class="card full-height-card">
+          <a-alert v-if="!capabilities.timer" :message="t('capture.timerNotSupported')"
+            :description="t('capture.timerNotSupportedDesc')" type="warning" show-icon class="mb-3" />
 
           <a-form layout="vertical">
             <a-form-item :label="t('capture.interval')">
               <a-space>
-                <a-input-number
-                  v-model:value="timerInterval"
-                  :min="1"
-                  :max="3600"
-                  :disabled="timerRunning || !capabilities.timer"
-                  style="width: 120px"
-                />
-                <a-select
-                  v-model:value="timerUnit"
-                  :disabled="timerRunning || !capabilities.timer"
-                  style="width: 150px"
-                >
+                <a-input-number v-model:value="timerInterval" :min="1" :max="3600"
+                  :disabled="timerRunning || !capabilities.timer" style="width: 120px" />
+                <a-select v-model:value="timerUnit" :disabled="timerRunning || !capabilities.timer"
+                  style="width: 150px">
                   <a-select-option value="seconds">{{ t('capture.seconds') }}</a-select-option>
                   <a-select-option value="minutes">{{ t('capture.minutes') }}</a-select-option>
                 </a-select>
               </a-space>
+              <a-space style="margin-left: 16px; transform: translateY(2px);">
+                <a-button v-if="!timerRunning" type="primary" @click="handleStartTimer" :loading="timerActionLoading"
+                  :disabled="!cameraStore.hasActiveProfile || !capabilities.timer">
+                  {{ t('capture.startTimer') }}
+                </a-button>
+                <a-button v-else danger @click="handleStopTimer" :loading="timerActionLoading">
+                  {{ t('capture.stopTimer') }}
+                </a-button>
+              </a-space>
+
             </a-form-item>
           </a-form>
 
-          <a-space class="mt-2">
-            <a-button
-              v-if="!timerRunning"
-              type="primary"
-              @click="handleStartTimer"
-              :loading="timerActionLoading"
-              :disabled="!cameraStore.hasActiveProfile || !capabilities.timer"
-            >
-              {{ t('capture.startTimer') }}
-            </a-button>
-            <a-button
-              v-else
-              danger
-              @click="handleStopTimer"
-              :loading="timerActionLoading"
-            >
-              {{ t('capture.stopTimer') }}
-            </a-button>
-          </a-space>
+
 
           <div v-if="timerRunning" class="timer-status mt-3">
-            <a-alert
-              :message="t('capture.timerRunning')"
+            <a-alert :message="t('capture.timerRunning')"
               :description="t('capture.timerRunningDesc', { interval: timerInterval, unit: timerUnitLabel })"
-              type="info"
-              show-icon
-            />
+              type="info" show-icon />
           </div>
         </a-card>
       </a-col>
@@ -124,54 +69,37 @@
           <a-button size="small" @click="toggleSelectAll">
             {{ allSelected ? t('capture.unselectAll') : t('capture.selectAll') }}
           </a-button>
-          <a-button
-            size="small"
-            :loading="exportLoading"
-            :disabled="selectedCaptureIds.length === 0"
-            @click="handleBatchExport"
-          >
+          <a-button size="small" :loading="exportLoading" :disabled="selectedCaptureIds.length === 0"
+            @click="handleBatchExport">
             {{ t('capture.saveSelected') }}
           </a-button>
-          <a-button
-            size="small"
-            danger
-            :disabled="selectedCaptureIds.length === 0"
-            @click="handleBatchDelete"
-          >
+          <a-button size="small" danger :disabled="selectedCaptureIds.length === 0" @click="handleBatchDelete">
             {{ t('capture.deleteSelected') }}
           </a-button>
         </a-space>
       </div>
       <a-empty v-if="captureHistory.length === 0" :description="t('capture.noRecent')" />
-      <a-list
-        v-else
-        :dataSource="captureHistory"
-        item-layout="horizontal"
-      >
+      <a-list v-else :dataSource="captureHistory" item-layout="horizontal">
         <template #renderItem="{ item }">
           <a-list-item>
             <div class="capture-item">
               <div class="capture-item-header">
-                <a-checkbox
-                  :checked="selectedCaptureIds.includes(item.capture_id)"
-                  @change="(event) => toggleSelectCapture(item.capture_id, event.target.checked)"
-                />
+                <a-checkbox :checked="selectedCaptureIds.includes(item.capture_id)"
+                  @change="(event) => toggleSelectCapture(item.capture_id, event.target.checked)" />
                 <a-list-item-meta>
                   <template #title>
                     {{ t('capture.item.captureIdTitle', { id: item.capture_id }) }}
                   </template>
                   <template #description>
-                    {{ t('capture.item.description', { type: formatCaptureType(item.type), status: formatCaptureStatus(item.status || 'pending'), time: formatTime(item.timestamp) }) }}
+                    {{ t('capture.item.description', {
+                      type: formatCaptureType(item.type), status:
+                        formatCaptureStatus(item.status || 'pending'), time: formatTime(item.timestamp) }) }}
                   </template>
                 </a-list-item-meta>
               </div>
 
-              <a-progress
-                v-if="item.previewLoading"
-                :percent="item.previewProgress || 0"
-                status="active"
-                size="small"
-              />
+              <a-progress v-if="item.previewLoading" :percent="item.previewProgress || 0" status="active"
+                size="small" />
 
               <div v-if="item.previewUrls?.length" class="preview-row">
                 <div v-for="(url, index) in item.previewUrls" :key="url" class="preview-card">
@@ -508,7 +436,7 @@ async function handleBatchExport() {
     }
 
     if (result?.success) {
-      message.success(t('capture.messages.exportSuccess', { directory: result.directory }))
+      message.success(t('capture.messages.exportSuccess', { directory: result.directory }),5)
     } else {
       message.error(t('capture.messages.exportFailed'))
     }
@@ -666,6 +594,20 @@ function startCapturePolling(captureId) {
 
 .mt-3 {
   margin-top: 16px;
+}
+
+.capture-col {
+  display: flex;
+}
+
+.full-height-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.full-height-card :deep(.ant-card-body) {
+  flex: 1;
 }
 
 .capture-result,
