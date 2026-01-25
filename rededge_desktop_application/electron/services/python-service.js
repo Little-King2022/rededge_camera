@@ -160,39 +160,25 @@ class PythonServiceManager {
       } else {
         // 开发环境：使用conda环境运行Python脚本
         const appPath = path.join(servicePath, 'app.py')
-        const condaPath = this.getCondaPath()
-        const condaEnv = process.env.REDEDGE_CONDA_ENV || 'micasense'
+        const condaPath = "D:\\anaconda3\\Scripts\\conda.exe"
+        const condaEnv = "micasense"
+        const condaLower = condaPath.toLowerCase()
+        const needsShell = condaLower.endsWith('.bat') || condaLower.endsWith('.cmd')
+        console.log(`[PythonService] Using conda: ${condaPath} (env: ${condaEnv})`)
 
-        if (condaPath) {
-          const condaLower = condaPath.toLowerCase()
-          const needsShell = condaLower.endsWith('.bat') || condaLower.endsWith('.cmd')
-          console.log(`[PythonService] Using conda: ${condaPath} (env: ${condaEnv})`)
-
-          // 使用 conda run 命令（跨平台兼容）
-          this.process = spawn(condaPath, ['run', '-n', condaEnv, '--no-capture-output', 'python', appPath], {
-            cwd: servicePath,
-            env: {
-              ...process.env,
-              PYTHON_SERVICE_PORT: String(PYTHON_SERVICE_PORT),
-              FLASK_DEBUG: 'false'
-            },
-            stdio: ['ignore', 'pipe', 'pipe'],
-            windowsHide: true,
-            shell: needsShell
-          })
-        } else {
-          console.warn('[PythonService] Conda not found, falling back to Python:', pythonExe)
-          this.process = spawn(pythonExe, [appPath], {
-            cwd: servicePath,
-            env: {
-              ...process.env,
-              PYTHON_SERVICE_PORT: String(PYTHON_SERVICE_PORT),
-              FLASK_DEBUG: 'false'
-            },
-            stdio: ['ignore', 'pipe', 'pipe'],
-            windowsHide: true
-          })
-        }
+        // 使用 conda run 命令（跨平台兼容）
+        this.process = spawn(condaPath, ['run', '-n', condaEnv, '--no-capture-output', 'python', appPath], {
+          cwd: servicePath,
+          env: {
+            ...process.env,
+            PYTHON_SERVICE_PORT: String(PYTHON_SERVICE_PORT),
+            FLASK_DEBUG: 'false'
+          },
+          stdio: ['ignore', 'pipe', 'pipe'],
+          windowsHide: true,
+          shell: needsShell
+        })
+        
       }
 
       // 监听输出
@@ -485,22 +471,6 @@ class PythonServiceManager {
     return this.request('/api/calibration/parse-serial', {
       method: 'POST',
       body: { serial }
-    })
-  }
-
-  /**
-   * 计算配准矩阵
-   */
-  async computeWarpMatrices(imagePaths, options = {}) {
-    return this.request('/api/alignment/compute-warp-matrices', {
-      method: 'POST',
-      body: {
-        image_paths: imagePaths,
-        method: options.method || 'opencv',
-        reference_band: options.referenceBand || 1,
-        output_path: options.outputPath
-      },
-      timeout: 300000 // Alignment can take several minutes on large captures.
     })
   }
 
