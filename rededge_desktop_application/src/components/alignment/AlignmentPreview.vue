@@ -12,7 +12,7 @@
         <!-- Output Info -->
         <a-descriptions :column="1" size="small" bordered>
           <a-descriptions-item :label="t('alignment.preview.outputPath')">
-            <a-typography-text :ellipsis="{ tooltip: result.output_path }">
+            <a-typography-text :ellipsis="{ tooltip: result.output_path }" class="path-text">
               {{ result.output_path }}
             </a-typography-text>
           </a-descriptions-item>
@@ -22,13 +22,13 @@
           </a-descriptions-item>
 
           <a-descriptions-item v-if="result.rgb_preview_path" :label="t('alignment.preview.rgbPreview')">
-            <a-typography-text :ellipsis="{ tooltip: result.rgb_preview_path }">
+            <a-typography-text :ellipsis="{ tooltip: result.rgb_preview_path }" class="path-text">
               {{ result.rgb_preview_path }}
             </a-typography-text>
           </a-descriptions-item>
 
           <a-descriptions-item v-if="result.ndvi_path" :label="t('alignment.preview.ndviPath')">
-            <a-typography-text :ellipsis="{ tooltip: result.ndvi_path }">
+            <a-typography-text :ellipsis="{ tooltip: result.ndvi_path }" class="path-text">
               {{ result.ndvi_path }}
             </a-typography-text>
           </a-descriptions-item>
@@ -66,11 +66,17 @@ async function openFolder() {
   if (!props.result?.output_path) return
 
   try {
-    // Extract directory from output path
-    const dir = props.result.output_path.substring(0, props.result.output_path.lastIndexOf('/'))
-    await window.electronAPI.app.openExternal(`file://${dir}`)
+    await window.electronAPI.app.showItemInFolder(props.result.output_path)
   } catch (e) {
     message.error(t('alignment.preview.openFolderFailed'))
   }
 }
 </script>
+
+<style scoped>
+.path-text {
+  white-space: normal;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+</style>
