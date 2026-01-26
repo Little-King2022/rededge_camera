@@ -3,6 +3,7 @@
  * 管理Python Flask服务的生命周期
  */
 import { spawn, exec } from 'child_process'
+import { randomBytes } from 'crypto'
 import http from 'http'
 import fs from 'fs'
 import path from 'path'
@@ -505,12 +506,25 @@ class PythonServiceManager {
    * 单张图像配准
    */
   async alignSingle(imagePaths, warpMatricesPath, outputPath, options = {}) {
+    const outputPathWithUuid = outputPath
+      ? (() => {
+          const parsed = path.parse(outputPath)
+          const alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+          const bytes = randomBytes(6)
+          let shortId = ''
+          for (let i = 0; i < bytes.length; i += 1) {
+            shortId += alphabet[bytes[i] % alphabet.length]
+          }
+          const fileName = `${parsed.name}_${shortId}${parsed.ext}`
+          return parsed.dir ? path.join(parsed.dir, fileName) : fileName
+        })()
+      : outputPath
     return this.request('/api/alignment/align-single', {
       method: 'POST',
       body: {
         image_paths: imagePaths,
         warp_matrices_path: warpMatricesPath,
-        output_path: outputPath,
+        output_path: outputPathWithUuid,
         options
       },
       timeout: 60000

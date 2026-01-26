@@ -142,7 +142,20 @@ async function selectOutputPath() {
   const result = await window.electronAPI.alignment.selectOutputDirectory()
   if (result.success) {
     // Generate output filename
-    const timestamp = Date.now()
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    const hour = String(now.getHours()).padStart(2, '0')
+    const minute = String(now.getMinutes()).padStart(2, '0')
+    const second = String(now.getSeconds()).padStart(2, '0')
+    const timestamp = `${year}${month}${day}_${hour}${minute}${second}`
+    // If Windows, use backslashes
+    const isWindows = window.navigator.platform.indexOf('Win') > -1
+    if (isWindows) {
+      config.value.outputPath = `${result.directory}\\aligned_${timestamp}.tif`
+      return
+    }
     config.value.outputPath = `${result.directory}/aligned_${timestamp}.tif`
   }
 }
