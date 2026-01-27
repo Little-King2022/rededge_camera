@@ -58,13 +58,35 @@ def get_binaries():
         pyzbar_path = os.path.dirname(pyzbar.__file__)
         dll_files = ['libiconv.dll', 'libzbar-64.dll']
 
+        def find_dll(dll_name, search_dirs):
+            for dll_dir in search_dirs:
+                if not dll_dir or not os.path.exists(dll_dir):
+                    continue
+                dll_path = os.path.join(dll_dir, dll_name)
+                if os.path.exists(dll_path):
+                    return dll_path
+            return None
+
+        # 可能的 DLL 搜索路径
+        search_dirs = [pyzbar_path]
+
+        conda_prefix = os.environ.get('CONDA_PREFIX')
+        if conda_prefix:
+            search_dirs.append(os.path.join(conda_prefix, 'Library', 'bin'))
+            search_dirs.append(os.path.join(conda_prefix, 'DLLs'))
+
+        # PATH 中的目录
+        for path_dir in os.environ.get('PATH', '').split(os.pathsep):
+            if path_dir:
+                search_dirs.append(path_dir.strip('"'))
+
         for dll_name in dll_files:
-            dll_path = os.path.join(pyzbar_path, dll_name)
-            if os.path.exists(dll_path):
+            dll_path = find_dll(dll_name, search_dirs)
+            if dll_path:
                 binaries.append((dll_path, 'pyzbar'))
                 print(f'[INFO] 找到 pyzbar DLL: {dll_path}')
             else:
-                print(f'[WARN] 未找到 {dll_name} 在 {pyzbar_path}')
+                print(f'[WARN] 未找到 {dll_name}，已搜索目录: {search_dirs}')
     except Exception as e:
         print(f'[WARN] 处理 pyzbar DLL 时出错: {e}')
 

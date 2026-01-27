@@ -53,7 +53,8 @@ class Panel(object):
                 self.__panel_bounds = np.array(panel_corners)
             else:
                 self.__panel_bounds = np.array(self.image.panel_region)
-            self.panel_albedo = self.image.panel_albedo()
+            # Handle both attribute and callable variants of panel_albedo
+            self.panel_albedo = self.image.panel_albedo() if callable(self.image.panel_albedo) else self.image.panel_albedo
             self.serial = self.image.panel_serial
             self.qr_area = None
             self.qr_bounds = None

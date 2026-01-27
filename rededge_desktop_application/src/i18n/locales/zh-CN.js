@@ -353,11 +353,17 @@
       proxyUrl: '相机 API 代理地址',
       proxyPlaceholder: '请输入有效的 HTTP/HTTPS 代理地址',
       proxyUrlExtra: '支持 http/https 代理，例如：{example}',
-      proxyUrlInvalid: '请输入有效的 HTTP/HTTPS 代理地址'
+      proxyUrlInvalid: '请输入有效的 HTTP/HTTPS 代理地址',
+      adminServerTitle: '管理服务器',
+      adminServerUrl: '服务器地址',
+      adminServerUrlPlaceholder: 'http://localhost:5000/api'
     },
     update: {
       title: '系统更新',
       checkUpdate: '检查更新',
+      downloadUpdate: '下载更新包',
+      installUpdate: '安装更新',
+      openDownloadFolder: '打开下载目录',
       checking: '正在检查更新...',
       upToDate: '已是最新版本',
       updateAvailable: '发现新版本',
@@ -386,6 +392,8 @@
       trialDesc: '请输入激活码解锁完整版',
       expiredTitle: '授权已过期',
       expiredDesc: '请输入有效激活码继续使用软件',
+      revokedTitle: '授权已吊销',
+      revokedDesc: '授权已被服务器吊销，请联系支持或重新激活。',
       activationCode: '激活码',
       activationPlaceholder: '请输入激活码',
       activateButton: '激活',
@@ -421,12 +429,14 @@
     status: {
       activated: '已激活',
       expired: '已过期',
+      revoked: '已吊销',
       trial: '试用版',
       unknown: '未知状态'
     },
     statusDesc: {
       activated: '授权有效且可用',
       expired: '授权已过期，请激活后继续使用。',
+      revoked: '授权已被服务器吊销。',
       trial: '正在使用试用版，剩余 {days} 天。',
       unknown: ''
     },
@@ -760,7 +770,7 @@
       },
       alignment: {
         title: '影像配准',
-        content: '<p>影像配准页面用于多波段影像配准。</p><ul><li>生成配准矩阵</li><li>单张影像配准</li><li>批量影像配准</li><li>管理配准矩阵和任务记录</li></ul><p>配准应基于辐射定标后的反射率影像进行，以获得更好的效果。</p>'
+        content: '<p>影像配准页面用于多波段影像配准。</p><ul><li>生成配准矩阵</li><li>单张影像配准</li><li>批量影像配准</li><li>管理配准矩阵和任务记录</li></ul><p>配准应基于辐射定标后的反射率影像进行，以获得更好的效果。</p><p><strong>波段配准流程：</strong></p><ol><li>进入“影像配准” -> “生成配准矩阵”。</li><li>选择辐射定标后输出的 5 波段反射率 TIF（例如 output 目录下的同一组）。</li><li>对齐方法建议：RedEdge-M/MX 选 “opencv( ECC )”；RedEdge-P/Altum-PT 可选 “sift”。</li><li>参考波段建议选 Red/RedEdge（默认即可）。</li><li>点击“计算配准矩阵”，等待完成。</li><li>在“配准记录”中将该矩阵设为“激活”。</li><li>进入“批量配准”，选择输入目录（定标后的输出目录）与输出目录。</li><li>选择已激活的配准矩阵，点击开始。</li></ol>'
       },
       settings: {
         title: '设置',

@@ -166,7 +166,7 @@ body::-webkit-scrollbar {
 .logo {
   display: flex;
   align-items: center;
-  margin-right: 50px;
+  margin-right: 30px;
 }
 
 .logo-text {
@@ -212,6 +212,7 @@ body::-webkit-scrollbar {
   align-items: center;
   gap: 6px;
   margin-left: auto;
+  transform: translateX(30px);
   -webkit-app-region: no-drag;
 }
 

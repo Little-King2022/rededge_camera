@@ -5,12 +5,15 @@
 import { spawn, exec } from 'child_process'
 import { randomBytes } from 'crypto'
 import http from 'http'
+import https from 'https'
 import fs from 'fs'
 import path from 'path'
 import { app } from 'electron'
 import { fileURLToPath } from 'url'
+import database from './database.js'
+import { getProxyAgentForUrl } from './proxy-agent.js'
 
-const PYTHON_SERVICE_PORT = 5000
+const PYTHON_SERVICE_PORT = 5001
 const HEALTH_CHECK_INTERVAL = 5000
 const MAX_STARTUP_RETRIES = 30
 const STARTUP_CHECK_INTERVAL = 500
@@ -379,8 +382,11 @@ class PythonServiceManager {
       }
     }
 
+    const proxyAgent = getProxyAgentForUrl(url, database.getAllSettings())
+    const httpModule = url.protocol === 'https:' ? https : http
+
     return new Promise((resolve, reject) => {
-      const req = http.request(url, { method, headers }, (res) => {
+      const req = httpModule.request(url, { method, headers, agent: proxyAgent || undefined }, (res) => {
         const chunks = []
 
         res.on('data', (chunk) => {

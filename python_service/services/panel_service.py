@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 try:
     from pyzbar import pyzbar
     PYZBAR_AVAILABLE = True
-except ImportError:
+except Exception as exc:
     PYZBAR_AVAILABLE = False
-    logger.warning('pyzbar not available, QR code detection disabled')
+    logger.warning(f'pyzbar not available, QR code detection disabled: {exc}')
 
 
 class PanelService:

@@ -10,6 +10,10 @@ export const useLicenseStore = defineStore('license', () => {
   const isActivated = computed(() => licenseInfo.value?.status === 'activated')
   const isTrial = computed(() => licenseInfo.value?.status === 'trial')
   const isExpired = computed(() => licenseInfo.value?.status === 'expired')
+  const isRevoked = computed(() => {
+    const status = String(licenseInfo.value?.status || '').toLowerCase()
+    return status === 'revoked' || status === 'invalid'
+  })
   const trialDaysRemaining = computed(() => licenseInfo.value?.trial_days_remaining || 0)
 
   // Load license info
@@ -67,6 +71,7 @@ export const useLicenseStore = defineStore('license', () => {
     isActivated,
     isTrial,
     isExpired,
+    isRevoked,
     trialDaysRemaining,
     loadLicenseInfo,
     activate,

@@ -79,7 +79,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // App utilities
   app: {
-    openExternal: (url) => ipcRenderer.invoke('app:openExternal', url)
+    openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),
+    openPath: (path) => ipcRenderer.invoke('app:openPath', path),
+    showItemInFolder: (path) => ipcRenderer.invoke('app:showItemInFolder', path)
   },
 
   window: {
@@ -181,6 +183,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
   system: {
     getInfo: () => ipcRenderer.invoke('system:getInfo'),
     getVersion: () => ipcRenderer.invoke('system:getVersion')
+  },
+
+  // Admin Client APIs
+  admin: {
+    getSettings: () => ipcRenderer.invoke('admin:getSettings'),
+    updateSettings: (settings) => ipcRenderer.invoke('admin:updateSettings', settings),
+    checkConnection: () => ipcRenderer.invoke('admin:checkConnection'),
+    activateLicense: (activationCode) => ipcRenderer.invoke('admin:activateLicense', activationCode),
+    validateLicense: () => ipcRenderer.invoke('admin:validateLicense'),
+    checkUpdates: () => ipcRenderer.invoke('admin:checkUpdates'),
+    downloadUpdate: (versionId) => ipcRenderer.invoke('admin:downloadUpdate', versionId),
+    syncCameraConfigs: () => ipcRenderer.invoke('admin:syncCameraConfigs'),
+    getHeartbeatStatus: () => ipcRenderer.invoke('admin:getHeartbeatStatus'),
+    getOfflineMode: () => ipcRenderer.invoke('admin:getOfflineMode')
   }
 })
 

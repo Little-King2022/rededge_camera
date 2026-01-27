@@ -94,7 +94,7 @@ if __name__ == '__main__':
         pass  # 已经设置过了
 
     app = create_app()
-    port = int(os.environ.get('PYTHON_SERVICE_PORT', 5000))
+    port = int(os.environ.get('PYTHON_SERVICE_PORT', 5001))
 
     # 强制禁用 debug 模式（打包环境下 debug 模式不稳定）
     debug = False

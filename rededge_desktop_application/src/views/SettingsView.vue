@@ -120,6 +120,15 @@
                   </template>
                 </a-form-item>
               </a-card>
+
+              <!-- Admin Server Settings -->
+              <a-card size="small" :title="t('settings.network.adminServerTitle', 'Management Server')" class="settings-section mt-3">
+                <a-form-item :label="t('settings.network.adminServerUrl', 'Server URL')">
+                  <a-input v-model:value="settings.admin_server_url"
+                    :placeholder="t('settings.network.adminServerUrlPlaceholder', 'http://localhost:5000/api')"
+                    disabled />
+                </a-form-item>
+              </a-card>
             </div>
 
             <!-- 4-Software License -->
@@ -187,6 +196,9 @@
                       :message="t('settings.license.trialAlert', { days: licenseStore.trialDaysRemaining })"
                       :description="t('settings.license.trialDesc')" type="info" show-icon class="mb-3" />
 
+                    <a-alert v-if="licenseStore.isRevoked" :message="t('settings.license.revokedTitle')"
+                      :description="t('settings.license.revokedDesc')" type="error" show-icon class="mb-3" />
+
                     <a-alert v-if="licenseStore.isExpired" :message="t('settings.license.expiredTitle')"
                       :description="t('settings.license.expiredDesc')" type="error" show-icon class="mb-3" />
 
@@ -234,15 +246,42 @@
                     {{ buildTime }}
                   </a-descriptions-item>
                 </a-descriptions>
-                <a-button type="primary" :loading="updateInfo.checking" @click="handleCheckUpdate">
-                  {{ t('settings.update.checkUpdate') }}
-                </a-button>
+                <a-space>
+                  <a-button type="primary" :loading="updateInfo.checking" @click="handleCheckUpdate">
+                    {{ t('settings.update.checkUpdate') }}
+                  </a-button>
+                  <a-button
+                    v-if="updateInfo.hasUpdate"
+                    :loading="updateInfo.downloading"
+                    :disabled="!updateInfo.latestId"
+                    @click="handleDownloadUpdate"
+                  >
+                    {{ t('settings.update.downloadUpdate') }}
+                  </a-button>
+                  <a-button
+                    v-if="updateInfo.downloadPath"
+                    @click="handleInstallUpdate"
+                  >
+                    {{ t('settings.update.installUpdate') }}
+                  </a-button>
+                  <a-button
+                    v-if="updateInfo.downloadPath"
+                    @click="handleOpenDownloadFolder"
+                  >
+                    {{ t('settings.update.openDownloadFolder') }}
+                  </a-button>
+                </a-space>
               </a-card>
 
               <!-- 5-2 Software Update Log -->
-              <a-card size="small" :title="t('settings.update.releaseNotes')" v-if="updateInfo.releaseNotes"
+              <a-card size="small" :title="t('settings.update.releaseNotes')" v-if="updateInfo.hasUpdate"
                 class="settings-section mt-3">
-                <div v-html="updateInfo.releaseNotes" style="max-height: 300px; overflow-y: auto;"></div>
+                <div
+                  v-if="updateInfo.releaseNotes"
+                  v-html="updateInfo.releaseNotes"
+                  style="max-height: 300px; overflow-y: auto;"
+                ></div>
+                <div v-else>{{ t('common.none') }}</div>
               </a-card>
 
               <!-- 5-3 Support Information -->
@@ -293,10 +332,13 @@ const activationError = ref(null)
 // 系统更新相关
 const updateInfo = ref({
   checking: false,
+  downloading: false,
   hasUpdate: false,
+  latestId: null,
   latestVersion: '',
   currentVersion: import.meta.env.VITE_APP_VERSION || '1.0.1',
   releaseNotes: '',
+  downloadPath: '',
   lastCheckTime: null,
   error: null
 })
@@ -310,6 +352,8 @@ const settings = ref({
   enable_logging: true,
   camera_proxy_enabled: false,
   camera_proxy_url: '',
+  admin_server_enabled: false,
+  admin_server_url: '',
   language: 'en-US'
 })
 
@@ -352,6 +396,8 @@ async function loadSettings() {
       enable_logging: allSettings.enable_logging === 'true',
       camera_proxy_enabled: allSettings.camera_proxy_enabled === 'true',
       camera_proxy_url: allSettings.camera_proxy_url || '',
+      admin_server_enabled: allSettings.admin_server_enabled === 'true',
+      admin_server_url: allSettings.admin_server_url || '',
       language: targetLanguage
     }
     if (targetLanguage !== locale.value) {
@@ -379,6 +425,13 @@ async function handleSave() {
     await window.electronAPI.settings.set('enable_logging', String(settings.value.enable_logging))
     await window.electronAPI.settings.set('camera_proxy_enabled', String(settings.value.camera_proxy_enabled))
     await window.electronAPI.settings.set('camera_proxy_url', settings.value.camera_proxy_url)
+    
+    // Update Admin Server settings via specific IPC to ensure client re-initialization
+    await window.electronAPI.admin.updateSettings({
+      admin_server_enabled: String(settings.value.admin_server_enabled),
+      admin_server_url: settings.value.admin_server_url
+    })
+
     await window.electronAPI.settings.set('language', settings.value.language)
     if (settings.value.language !== locale.value) {
       locale.value = settings.value.language
@@ -455,6 +508,7 @@ async function handleValidate() {
 
 function getStatusIcon() {
   if (licenseStore.isActivated) return 'success'
+  if (licenseStore.isRevoked) return 'error'
   if (licenseStore.isExpired) return 'error'
   if (licenseStore.isTrial) return 'warning'
   return 'info'
@@ -462,6 +516,7 @@ function getStatusIcon() {
 
 function getStatusTitle() {
   if (licenseStore.isActivated) return t('settings.status.activated')
+  if (licenseStore.isRevoked) return t('settings.status.revoked')
   if (licenseStore.isExpired) return t('settings.status.expired')
   if (licenseStore.isTrial) return t('settings.status.trial')
   return t('settings.status.unknown')
@@ -470,6 +525,9 @@ function getStatusTitle() {
 function getStatusDescription() {
   if (licenseStore.isActivated) {
     return t('settings.statusDesc.activated')
+  }
+  if (licenseStore.isRevoked) {
+    return t('settings.statusDesc.revoked')
   }
   if (licenseStore.isExpired) {
     return t('settings.statusDesc.expired')
@@ -482,6 +540,7 @@ function getStatusDescription() {
 
 function getStatusColor() {
   if (licenseStore.isActivated) return 'green'
+  if (licenseStore.isRevoked) return 'red'
   if (licenseStore.isExpired) return 'red'
   if (licenseStore.isTrial) return 'orange'
   return 'default'
@@ -504,6 +563,7 @@ function formatLicenseStatus(status) {
   const normalized = String(status || '').toLowerCase()
   if (normalized === 'activated') return t('settings.status.activated')
   if (normalized === 'expired') return t('settings.status.expired')
+  if (normalized === 'revoked' || normalized === 'invalid') return t('settings.status.revoked')
   if (normalized === 'trial') return t('settings.status.trial')
   if (!normalized) return t('settings.status.unknown')
   return status
@@ -513,36 +573,32 @@ function formatLicenseStatus(status) {
 async function handleCheckUpdate() {
   updateInfo.value.checking = true
   updateInfo.value.error = null
+  updateInfo.value.downloading = false
 
   try {
-    // TODO: 替换为真实的更新检查API
-    // const response = await window.electronAPI?.update?.check?.()
-
-    // Mock: 模拟服务器响应延迟
-    await new Promise(resolve => setTimeout(resolve, 1500))
-
-    // Mock: 当前为最新版
-    const mockResponse = {
-      hasUpdate: false,
-      latestVersion: updateInfo.value.currentVersion,
-      releaseNotes: `
-        <h4>v${updateInfo.value.currentVersion}</h4>
-        <ul>
-          <li>新增系统更新功能</li>
-          <li>优化界面响应速度</li>
-          <li>修复已知问题</li>
-        </ul>
-      `
+    if (!window.electronAPI?.admin?.checkUpdates) {
+      throw new Error('Update API not available')
     }
 
-    updateInfo.value.hasUpdate = mockResponse.hasUpdate
-    updateInfo.value.latestVersion = mockResponse.latestVersion
-    updateInfo.value.releaseNotes = mockResponse.releaseNotes
+    const result = await window.electronAPI.admin.checkUpdates()
+    if (!result || result.success === false) {
+      throw new Error(result?.error || 'Update check failed')
+    }
+
+    const latest = result.latest_version || null
+    const hasUpdate = Boolean(result.has_update ?? result.hasUpdate)
+    const latestVersion = latest?.version || updateInfo.value.currentVersion
+
+    updateInfo.value.hasUpdate = hasUpdate
+    updateInfo.value.latestId = latest?.id || null
+    updateInfo.value.latestVersion = latestVersion
+    updateInfo.value.releaseNotes = latest?.release_notes || result.release_notes || ''
+    updateInfo.value.downloadPath = ''
     updateInfo.value.lastCheckTime = new Date().toISOString()
 
-    if (mockResponse.hasUpdate) {
+    if (hasUpdate) {
       message.warning(t('settings.update.messages.newVersionAvailable', {
-        version: mockResponse.latestVersion
+        version: latestVersion
       }))
     } else {
       message.success(t('settings.update.messages.upToDate', {
@@ -554,6 +610,65 @@ async function handleCheckUpdate() {
     message.error(t('settings.update.messages.checkFailed', { error: error.message }))
   } finally {
     updateInfo.value.checking = false
+  }
+}
+
+async function handleDownloadUpdate() {
+  if (!updateInfo.value.latestId) {
+    message.error(t('settings.update.messages.downloadFailed', { error: 'Missing version id' }))
+    return
+  }
+
+  updateInfo.value.downloading = true
+  updateInfo.value.error = null
+
+  try {
+    const result = await window.electronAPI?.admin?.downloadUpdate(updateInfo.value.latestId)
+    if (!result || result.success === false) {
+      throw new Error(result?.error || 'Download failed')
+    }
+
+    updateInfo.value.downloadPath = result.path || ''
+    message.success(t('settings.update.messages.downloadSuccess'))
+  } catch (error) {
+    updateInfo.value.error = error.message || 'Unknown error'
+    message.error(t('settings.update.messages.downloadFailed', { error: error.message }))
+  } finally {
+    updateInfo.value.downloading = false
+  }
+}
+
+async function handleInstallUpdate() {
+  const downloadPath = updateInfo.value.downloadPath
+  if (!downloadPath) {
+    message.error(t('settings.update.messages.downloadFailed', { error: 'Missing download path' }))
+    return
+  }
+
+  try {
+    const result = await window.electronAPI?.app?.openPath(downloadPath)
+    if (result && result.success === false) {
+      throw new Error(result.error || 'Open installer failed')
+    }
+  } catch (error) {
+    message.error(t('settings.update.messages.downloadFailed', { error: error.message }))
+  }
+}
+
+async function handleOpenDownloadFolder() {
+  const downloadPath = updateInfo.value.downloadPath
+  if (!downloadPath) {
+    message.error(t('settings.update.messages.downloadFailed', { error: 'Missing download path' }))
+    return
+  }
+
+  try {
+    const result = await window.electronAPI?.app?.showItemInFolder(downloadPath)
+    if (result && result.success === false) {
+      throw new Error(result.error || 'Open download folder failed')
+    }
+  } catch (error) {
+    message.error(t('settings.update.messages.downloadFailed', { error: error.message }))
   }
 }
 </script>

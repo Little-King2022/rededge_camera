@@ -9,6 +9,7 @@ import licenseService from '../services/license.js'
 import downloadService from '../services/download.js'
 import deleteService from '../services/delete.js'
 import pythonService from '../services/python-service.js'
+import { getAdminClient } from '../services/admin-client.js'
 
 /**
  * Register all IPC handlers
@@ -229,6 +230,27 @@ export function registerIPCHandlers() {
         return { success: false, error: 'Unsupported protocol' }
       }
       await shell.openExternal(parsed.toString())
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  })
+
+  ipcMain.handle('app:openPath', async (event, pathString) => {
+    try {
+      const error = await shell.openPath(pathString)
+      if (error) {
+        return { success: false, error }
+      }
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  })
+
+  ipcMain.handle('app:showItemInFolder', async (event, pathString) => {
+    try {
+      shell.showItemInFolder(pathString)
       return { success: true }
     } catch (error) {
       return { success: false, error: error.message }
@@ -992,6 +1014,98 @@ export function registerIPCHandlers() {
 
   ipcMain.handle('system:getVersion', async () => {
     return app.getVersion()
+  })
+
+  // ===== Admin Client Handlers =====
+
+  ipcMain.handle('admin:getSettings', async () => {
+    return database.getAdminSettings()
+  })
+
+  ipcMain.handle('admin:updateSettings', async (event, settings) => {
+    const adminClient = getAdminClient()
+    if (adminClient) {
+      adminClient.updateSettings(settings)
+    } else {
+      database.updateAdminSettings(settings)
+    }
+    return { success: true }
+  })
+
+  ipcMain.handle('admin:checkConnection', async () => {
+    const adminClient = getAdminClient()
+    if (!adminClient) {
+      return { success: false, error: 'Admin client not initialized' }
+    }
+
+    try {
+      // 尝试获取公钥来测试连接
+      await adminClient.getPublicKey()
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  })
+
+  ipcMain.handle('admin:activateLicense', async (event, activationCode) => {
+    const adminClient = getAdminClient()
+    if (!adminClient) {
+      return { success: false, error: 'Admin client not initialized' }
+    }
+
+    return await adminClient.activateLicense(activationCode)
+  })
+
+  ipcMain.handle('admin:validateLicense', async () => {
+    const adminClient = getAdminClient()
+    if (!adminClient) {
+      return { valid: false, error: 'Admin client not initialized' }
+    }
+
+    return await adminClient.validateLicense()
+  })
+
+  ipcMain.handle('admin:checkUpdates', async () => {
+    const adminClient = getAdminClient()
+    if (!adminClient) {
+      return { success: false, error: 'Admin client not initialized' }
+    }
+
+    return await adminClient.checkForUpdates()
+  })
+
+  ipcMain.handle('admin:downloadUpdate', async (event, versionId) => {
+    const adminClient = getAdminClient()
+    if (!adminClient) {
+      return { success: false, error: 'Admin client not initialized' }
+    }
+
+    const savePath = path.join(app.getPath('downloads'), 'rededge-updates', `update-${versionId}.exe`)
+    return await adminClient.downloadUpdate(versionId, savePath)
+  })
+
+  ipcMain.handle('admin:syncCameraConfigs', async () => {
+    const adminClient = getAdminClient()
+    if (!adminClient) {
+      return { success: false, error: 'Admin client not initialized' }
+    }
+
+    return await adminClient.syncCameraConfigs()
+  })
+
+  ipcMain.handle('admin:getHeartbeatStatus', async () => {
+    const settings = database.getAdminSettings()
+    return {
+      enabled: settings.admin_server_enabled === 'true',
+      last_heartbeat_at: settings.last_heartbeat_at
+    }
+  })
+
+  ipcMain.handle('admin:getOfflineMode', async () => {
+    const license = database.getLicenseState()
+    return {
+      offline_mode: license.offline_mode || false
+    }
   })
 
   console.log('[IPC] IPC handlers registered successfully')

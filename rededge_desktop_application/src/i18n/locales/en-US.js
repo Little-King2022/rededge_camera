@@ -353,11 +353,17 @@ export default {
       proxyUrl: 'Camera API Proxy URL',
       proxyPlaceholder: 'Please enter a valid HTTP/HTTPS proxy URL',
       proxyUrlExtra: 'Supports http/https proxies, e.g., {example}',
-      proxyUrlInvalid: 'Please enter a valid HTTP/HTTPS proxy URL'
+      proxyUrlInvalid: 'Please enter a valid HTTP/HTTPS proxy URL',
+      adminServerTitle: 'Management Server',
+      adminServerUrl: 'Server URL',
+      adminServerUrlPlaceholder: 'http://localhost:5000/api'
     },
     update: {
       title: 'System Update',
       checkUpdate: 'Check for Updates',
+      downloadUpdate: 'Download Update',
+      installUpdate: 'Install Update',
+      openDownloadFolder: 'Open Download Folder',
       checking: 'Checking for updates...',
       upToDate: 'Up to date',
       updateAvailable: 'Update Available',
@@ -386,6 +392,8 @@ export default {
       trialDesc: 'Enter your activation code to unlock the full version',
       expiredTitle: 'License Expired',
       expiredDesc: 'Please enter a valid activation code to continue using the software',
+      revokedTitle: 'License Revoked',
+      revokedDesc: 'Your license was revoked by the server. Please contact support or activate again.',
       activationCode: 'Activation Code',
       activationPlaceholder: 'Enter your activation code',
       activateButton: 'Activate',
@@ -421,12 +429,14 @@ export default {
     status: {
       activated: 'License Activated',
       expired: 'License Expired',
+      revoked: 'License Revoked',
       trial: 'Trial Version',
       unknown: 'Unknown Status'
     },
     statusDesc: {
       activated: 'Your license is active and valid',
       expired: 'Your license has expired. Please activate to continue.',
+      revoked: 'Your license has been revoked by the server.',
       trial: 'You are using the trial version. {days} days remaining.',
       unknown: ''
     },
@@ -759,7 +769,7 @@ export default {
       },
       alignment: {
         title: 'Image Alignment',
-        content: '<p>Image alignment page is used for multi-band image alignment.</p><ul><li>Generate warp matrices</li><li>Single image alignment</li><li>Batch image alignment</li><li>Manage warp matrices and job records</li></ul><p>Alignment should be performed on radiometrically calibrated reflectance images for better results.</p>'
+        content: '<p>Image alignment page is used for multi-band image alignment.</p><ul><li>Generate warp matrices</li><li>Single image alignment</li><li>Batch image alignment</li><li>Manage warp matrices and job records</li></ul><p>Alignment should be performed on radiometrically calibrated reflectance images for better results.</p><p><strong>Band alignment workflow:</strong></p><ol><li>Go to “Image Alignment” -> “Generate Warp Matrices”.</li><li>Select the 5-band reflectance TIFs generated after radiometric calibration (same capture set).</li><li>Method suggestion: RedEdge-M/MX use “opencv (ECC)”; RedEdge-P/Altum-PT can use “sift”.</li><li>Reference band: Red/RedEdge is recommended (default is OK).</li><li>Click “Compute Warp Matrices” and wait for completion.</li><li>In “Records”, set the new warp matrix as “Active”.</li><li>Go to “Batch Alignment”, choose input/output folders.</li><li>Select the active warp matrix and start.</li></ol>'
       },
       settings: {
         title: 'Settings',

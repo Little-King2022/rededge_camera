@@ -1,4 +1,9 @@
 import Store from 'electron-store'
+import crypto from 'crypto'
+import os from 'os'
+
+const FORCED_ADMIN_SERVER_URL = 'http://rededge.littleking.site/api'
+const FORCED_ADMIN_SERVER_ENABLED = 'true'
 
 // Initialize electron-store with schema
 const store = new Store({
@@ -12,7 +17,13 @@ const store = new Store({
       request_timeout: '30000',
       enable_logging: 'true',
       camera_proxy_enabled: 'false',
-      camera_proxy_url: ''
+      camera_proxy_url: '',
+      // 管理服务器设置
+      admin_server_url: FORCED_ADMIN_SERVER_URL,
+      admin_server_enabled: FORCED_ADMIN_SERVER_ENABLED,
+      admin_heartbeat_interval: '300000',
+      client_registered: 'false',
+      last_heartbeat_at: null
     },
     recent_captures: [],
     download_queue: [],
@@ -21,6 +32,11 @@ const store = new Store({
       id: 1,
       status: 'trial',
       device_fingerprint: '',
+      activation_code: '',
+      license_type: '',
+      offline_mode: false,
+      expiry_at: null,
+      last_check_at: null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     },
@@ -37,6 +53,29 @@ const store = new Store({
   }
 })
 
+const FINGERPRINT_SALT = 'rededge-license-salt-v1'
+
+function getPrimaryMacAddress() {
+  const nets = os.networkInterfaces()
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      if (net.family === 'IPv4' && !net.internal && net.mac && net.mac !== '00:00:00:00:00:00') {
+        return net.mac
+      }
+    }
+  }
+  return '00:00:00:00:00:00'
+}
+
+function buildDeviceFingerprint() {
+  const osInfo = `${os.platform()}|${os.release()}|${os.arch()}`
+  const cpuModel = os.cpus()[0]?.model || 'unknown'
+  const machineId = os.hostname() || 'unknown'
+  const mac = getPrimaryMacAddress()
+  const raw = `${osInfo}|${cpuModel}|${machineId}|${mac}|${FINGERPRINT_SALT}`
+  return crypto.createHash('sha256').update(raw).digest('hex')
+}
+
 class DatabaseService {
   constructor() {
     this.store = store
@@ -48,11 +87,21 @@ class DatabaseService {
     // Ensure license state has device fingerprint initialized
     const license = this.getLicenseState()
     if (!license.device_fingerprint) {
+      const deviceFingerprint = buildDeviceFingerprint()
       this.updateLicenseState({
-        device_fingerprint: '',
+        device_fingerprint: deviceFingerprint,
         created_at: new Date().toISOString()
       })
+      this.updateAdminSettings({
+        client_registered: 'false'
+      })
     }
+
+    // Enforce management server configuration on startup
+    this.updateAdminSettings({
+      admin_server_url: FORCED_ADMIN_SERVER_URL,
+      admin_server_enabled: FORCED_ADMIN_SERVER_ENABLED
+    })
 
     console.log('[DatabaseService] Database initialized successfully')
   }
@@ -148,6 +197,30 @@ class DatabaseService {
 
   getAllSettings() {
     return this.store.get('app_settings', {})
+  }
+
+  // Admin Server Settings
+  getAdminSettings() {
+    const settings = this.getAllSettings()
+    return {
+      admin_server_url: FORCED_ADMIN_SERVER_URL,
+      admin_server_enabled: FORCED_ADMIN_SERVER_ENABLED,
+      admin_heartbeat_interval: settings.admin_heartbeat_interval || '300000',
+      client_registered: settings.client_registered || 'false',
+      last_heartbeat_at: settings.last_heartbeat_at || null
+    }
+  }
+
+  updateAdminSettings(updates) {
+    const current = this.getAllSettings()
+    const updated = {
+      ...current,
+      ...updates
+    }
+    // Force management server settings regardless of stored values
+    updated.admin_server_url = FORCED_ADMIN_SERVER_URL
+    updated.admin_server_enabled = FORCED_ADMIN_SERVER_ENABLED
+    this.store.set('app_settings', updated)
   }
 
   // Recent Captures Repository

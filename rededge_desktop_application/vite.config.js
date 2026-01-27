@@ -4,16 +4,15 @@ import electron from 'vite-plugin-electron'
 import renderer from 'vite-plugin-electron-renderer'
 import { fileURLToPath, URL } from 'node:url'
 import fs from 'node:fs'
-import path from 'node:path'
 
 const pkgPath = fileURLToPath(new URL('./package.json', import.meta.url))
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
-const buildTime = new Date().toString()
+const buildTime = new Date()
 
 export default defineConfig({
   define: {
     'import.meta.env.VITE_APP_VERSION': JSON.stringify(pkg.version),
-    'import.meta.env.VITE_BUILD_TIME': JSON.stringify(buildTime)
+    'import.meta.env.VITE_BUILD_TIME': JSON.stringify(buildTime.toLocaleString())
   },
   plugins: [
     vue(),
@@ -22,7 +21,7 @@ export default defineConfig({
         entry: 'electron/main.js',
         vite: {
           build: {
-            outDir: 'dist-electron',
+            outDir: 'dist-electron_'+buildTime.getTime(),
             rollupOptions: {
               external: ['better-sqlite3']
             }
@@ -36,7 +35,7 @@ export default defineConfig({
         },
         vite: {
           build: {
-            outDir: 'dist-electron'
+            outDir: 'dist-electron_'+buildTime.getTime(),
           }
         }
       }

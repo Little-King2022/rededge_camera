@@ -1,0 +1,20 @@
+{
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "python-envs.defaultPackageManager": "ms-python.python:pip",
+    "python-envs.pythonProjects": [],
+    "files.exclude": {
+        "**/.git": true,
+        "**/.DS_Store": true,
+        "dist_electron": true,
+        "dist-electron": true,
+        "dist-electron_*": true
+    },
+    "files.watcherExclude": {
+        "**/dist-electron/**": true,
+        "**/dist-electron_*/**": true
+    },
+    "search.exclude": {
+        "**/dist-electron/**": true,
+        "**/dist-electron_*/**": true
+    }
+}

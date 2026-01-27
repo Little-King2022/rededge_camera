@@ -3,6 +3,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import database from './services/database.js'
 import licenseService from './services/license.js'
+import { createAdminClient } from './services/admin-client.js'
 import { registerIPCHandlers } from './ipc/handlers.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -232,6 +233,11 @@ async function initialize() {
     // Initialize license service
     const licenseStatus = await licenseService.initialize()
     console.log('[Main] License status:', licenseStatus)
+
+    // Initialize admin client service
+    const adminClient = createAdminClient(database)
+    await adminClient.initialize()
+    console.log('[Main] Admin client initialized')
 
     // Register IPC handlers
     registerIPCHandlers()

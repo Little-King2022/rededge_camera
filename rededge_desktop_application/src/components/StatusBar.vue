@@ -11,9 +11,9 @@
 
       <div class="status-item">
         <span class="status-label">{{ t('statusBar.licenseStatus') }}:</span>
-        <CheckCircleFilled v-if="isActivated" class="status-icon activated" />
-        <CloseCircleFilled v-else class="status-icon not-activated" />
-        <!-- <span class="status-value">{{ isActivated ? t('statusBar.activated') : t('statusBar.notActivated') }}</span> -->
+        <CheckCircleFilled v-if="licenseStatus === 'activated'" class="status-icon activated" />
+        <CloseCircleFilled v-else class="status-icon" :class="statusClass" />
+        <span class="status-value">{{ statusText }}</span>
       </div>
 
       <a-divider type="vertical" class="status-divider" />
@@ -129,12 +129,13 @@ const router = useRouter()
 // 应用版本
 const appVersion = ref('1.0.1')
 
-// 激活状态
-const isActivated = ref(false)
+// 授权状态
+const licenseStatus = ref('unknown')
 
 // 当前时间
 const currentTime = ref('')
 let timeInterval = null
+let licenseInterval = null
 
 // 系统信息
 const systemInfo = ref({
@@ -265,11 +266,36 @@ const loadAppVersion = async () => {
   }
 }
 
+const statusClass = computed(() => {
+  if (licenseStatus.value === 'activated') return 'activated'
+  if (licenseStatus.value === 'trial') return 'trial'
+  if (licenseStatus.value === 'expired' || licenseStatus.value === 'revoked' || licenseStatus.value === 'invalid') {
+    return 'revoked'
+  }
+  return 'not-activated'
+})
+
+const statusText = computed(() => {
+  switch (licenseStatus.value) {
+    case 'activated':
+      return t('settings.status.activated')
+    case 'trial':
+      return t('settings.status.trial')
+    case 'expired':
+      return t('settings.status.expired')
+    case 'revoked':
+    case 'invalid':
+      return t('settings.status.revoked')
+    default:
+      return t('settings.status.unknown')
+  }
+})
+
 const loadLicenseStatus = async () => {
   try {
     const license = await window.electronAPI?.license?.getInfo?.()
     if (license) {
-      isActivated.value = license.status === 'activated'
+      licenseStatus.value = String(license.status || 'unknown').toLowerCase()
     }
   } catch (error) {
     console.error('Failed to get license status:', error)
@@ -297,11 +323,13 @@ onMounted(() => {
 
   loadAppVersion()
   loadLicenseStatus()
+  licenseInterval = setInterval(loadLicenseStatus, 60000)
 })
 
 onUnmounted(() => {
   if (timeInterval) clearInterval(timeInterval)
   if (systemInfoInterval) clearInterval(systemInfoInterval)
+  if (licenseInterval) clearInterval(licenseInterval)
 })
 </script>
 
@@ -354,6 +382,14 @@ onUnmounted(() => {
 
 .status-icon.activated {
   color: #52c41a;
+}
+
+.status-icon.trial {
+  color: #faad14;
+}
+
+.status-icon.revoked {
+  color: #ff4d4f;
 }
 
 .status-icon.not-activated {
