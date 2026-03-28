@@ -152,7 +152,7 @@ body::-webkit-scrollbar {
   display: flex;
   align-items: center;
   background: #194d0c !important;
-  padding: 0 24px;
+  padding: 0 12px;
   box-shadow: 0 2px 8px rgba(10, 48, 7, 0.948);
   position: fixed;
   top: 0;
@@ -166,7 +166,8 @@ body::-webkit-scrollbar {
 .logo {
   display: flex;
   align-items: center;
-  margin-right: 30px;
+  margin-right: 15px;
+  margin-left: -15px;
 }
 
 .logo-text {
