@@ -1,10 +1,16 @@
 <template>
   <div class="user-management">
     <div class="toolbar">
-      <a-button type="primary" @click="showCreateModal">
-        <plus-outlined />
-        新增用户
-      </a-button>
+      <a-space>
+        <a-button type="primary" @click="showCreateModal">
+          <plus-outlined />
+          新增用户
+        </a-button>
+        <a-button @click="handleExport">
+          <export-outlined />
+          导出
+        </a-button>
+      </a-space>
     </div>
 
     <a-table
@@ -14,6 +20,7 @@
       :pagination="pagination"
       @change="handleTableChange"
       row-key="id"
+      :scroll="{ x: 900 }"
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'role'">
@@ -122,10 +129,11 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
+import * as XLSX from 'xlsx'
 import { useAuthStore } from '@/stores/auth'
 import { getUserList, createUser, updateUser, deleteUser, resetPassword } from '@/api/user'
 import { formatRole, formatDateTime } from '@/utils/format'
-import { PlusOutlined } from '@ant-design/icons-vue'
+import { PlusOutlined, ExportOutlined } from '@ant-design/icons-vue'
 
 const authStore = useAuthStore()
 
@@ -158,12 +166,12 @@ const newPassword = ref('')
 const confirmPassword = ref('')
 
 const columns = [
-  { title: '用户名', dataIndex: 'username', key: 'username' },
-  { title: '邮箱', dataIndex: 'email', key: 'email' },
-  { title: '角色', dataIndex: 'role', key: 'role' },
-  { title: '状态', dataIndex: 'is_active', key: 'is_active' },
-  { title: '最后登录', dataIndex: 'last_login_at', key: 'last_login_at' },
-  { title: '操作', key: 'action', width: 250 }
+  { title: '用户名', dataIndex: 'username', key: 'username', width: 150, fixed: 'left' },
+  { title: '邮箱', dataIndex: 'email', key: 'email', width: 200 },
+  { title: '角色', dataIndex: 'role', key: 'role', width: 100 },
+  { title: '状态', dataIndex: 'is_active', key: 'is_active', width: 80 },
+  { title: '最后登录', dataIndex: 'last_login_at', key: 'last_login_at', width: 180 },
+  { title: '操作', key: 'action', width: 250, fixed: 'right' }
 ]
 
 const getRoleColor = (role) => {
@@ -295,6 +303,22 @@ const fetchData = async () => {
 onMounted(() => {
   fetchData()
 })
+
+const handleExport = () => {
+  const data = users.value.map(item => ({
+    用户名: item.username,
+    邮箱: item.email || '-',
+    角色: formatRole(item.role),
+    状态: item.is_active ? '激活' : '禁用',
+    最后登录: formatDateTime(item.last_login_at)
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(data)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, '用户列表')
+  XLSX.writeFile(wb, `用户列表_${new Date().toLocaleDateString()}.xlsx`)
+  message.success('导出成功')
+}
 </script>
 
 <style scoped>

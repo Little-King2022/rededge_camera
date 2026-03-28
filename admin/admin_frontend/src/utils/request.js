@@ -58,8 +58,9 @@ request.interceptors.response.use(
           // 清除 Token
           localStorage.removeItem('access_token')
           localStorage.removeItem('user_info')
-          // 跳转到登录页
-          router.push('/login')
+          // 跳转到登录页，只携带路径部分
+          const redirectUrl = encodeURIComponent(window.location.pathname + window.location.search)
+          window.location.replace(`/login?redirect=${redirectUrl}`)
           break
         case 403:
           message.error('没有权限访问')
@@ -75,7 +76,8 @@ request.interceptors.response.use(
             // Token 相关错误，跳转登录页
             localStorage.removeItem('access_token')
             localStorage.removeItem('user_info')
-            router.push('/login')
+            const redirectUrl2 = encodeURIComponent(window.location.pathname + window.location.search)
+            window.location.replace(`/login?redirect=${redirectUrl2}`)
           }
           break
         case 429:

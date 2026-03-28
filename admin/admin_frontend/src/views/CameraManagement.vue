@@ -1,10 +1,16 @@
 <template>
   <div class="camera-management">
     <div class="toolbar">
-      <a-button type="primary" @click="showCreateModal">
-        <plus-outlined />
-        新增配置
-      </a-button>
+      <a-space>
+        <a-button type="primary" @click="showCreateModal">
+          <plus-outlined />
+          新增配置
+        </a-button>
+        <a-button @click="handleExport">
+          <export-outlined />
+          导出
+        </a-button>
+      </a-space>
     </div>
 
     <a-table
@@ -14,6 +20,7 @@
       :pagination="pagination"
       @change="handleTableChange"
       row-key="id"
+      :scroll="{ x: 900 }"
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'is_active'">
@@ -102,9 +109,10 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
+import * as XLSX from 'xlsx'
 import { useCameraStore } from '@/stores/camera'
 import { formatDateTime } from '@/utils/format'
-import { PlusOutlined } from '@ant-design/icons-vue'
+import { PlusOutlined, ExportOutlined } from '@ant-design/icons-vue'
 
 const cameraStore = useCameraStore()
 
@@ -131,11 +139,11 @@ const pagination = reactive({
 })
 
 const columns = [
-  { title: '配置名称', dataIndex: 'name', key: 'name' },
-  { title: '端点地址', key: 'endpoint' },
-  { title: '状态', dataIndex: 'is_active', key: 'is_active' },
-  { title: '创建时间', dataIndex: 'created_at', key: 'created_at' },
-  { title: '操作', key: 'action', width: 200 }
+  { title: '配置名称', dataIndex: 'name', key: 'name', width: 150, fixed: 'left' },
+  { title: '端点地址', key: 'endpoint', width: 250 },
+  { title: '状态', dataIndex: 'is_active', key: 'is_active', width: 100 },
+  { title: '创建时间', dataIndex: 'created_at', key: 'created_at', width: 180 },
+  { title: '操作', key: 'action', width: 200, fixed: 'right' }
 ]
 
 const showCreateModal = () => {
@@ -219,6 +227,21 @@ const fetchData = async () => {
 onMounted(() => {
   fetchData()
 })
+
+const handleExport = () => {
+  const data = cameraStore.cameras.map(item => ({
+    配置名称: item.name,
+    端点地址: `${item.protocol}://${item.host}:${item.port}${item.path_prefix || ''}`,
+    状态: item.is_active ? '激活' : '未激活',
+    创建时间: formatDateTime(item.created_at)
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(data)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, '相机配置')
+  XLSX.writeFile(wb, `相机配置_${new Date().toLocaleDateString()}.xlsx`)
+  message.success('导出成功')
+}
 </script>
 
 <style scoped>

@@ -83,8 +83,21 @@ const handleLogin = async () => {
     if (result.success) {
       message.success('登录成功')
 
-      const redirect = route.query.redirect || '/dashboard'
-      router.push(redirect)
+      // 处理 redirect 参数
+      let redirect = route.query.redirect
+      if (redirect) {
+        try {
+          // 解码并验证是否为有效路径
+          redirect = decodeURIComponent(redirect)
+          // 确保是相对路径（以 / 开头）且不是登录页面
+          if (!redirect.startsWith('/') || redirect.startsWith('/login')) {
+            redirect = '/dashboard'
+          }
+        } catch (e) {
+          redirect = '/dashboard'
+        }
+      }
+      router.push(redirect || '/dashboard')
     } else {
       message.error(result.error || '登录失败')
     }

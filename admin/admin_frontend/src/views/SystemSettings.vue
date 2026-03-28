@@ -92,48 +92,20 @@
       </a-tab-pane>
 
       <a-tab-pane key="statistics" tab="统计信息">
-        <a-card title="系统统计" :loading="statsLoading" style="margin-bottom: 24px">
-          <a-descriptions :column="2">
-            <a-descriptions-item label="客户端总数">
-              {{ systemStats.total_clients || 0 }}
-            </a-descriptions-item>
-            <a-descriptions-item label="在线客户端">
-              {{ systemStats.online_clients || 0 }}
-            </a-descriptions-item>
-            <a-descriptions-item label="授权码总数">
-              {{ systemStats.total_licenses || 0 }}
-            </a-descriptions-item>
-            <a-descriptions-item label="已激活授权码">
-              {{ systemStats.activated_licenses || 0 }}
-            </a-descriptions-item>
-            <a-descriptions-item label="软件版本数">
-              {{ systemStats.total_versions || 0 }}
-            </a-descriptions-item>
-            <a-descriptions-item label="今日新增客户端">
-              {{ systemStats.today_new_clients || 0 }}
-            </a-descriptions-item>
-          </a-descriptions>
-        </a-card>
-
-        <a-card title="使用统计">
-          <a-descriptions :column="2">
-            <a-descriptions-item label="今日总启动次数">
-              {{ usageStats.today_total_starts || 0 }}
-            </a-descriptions-item>
-            <a-descriptions-item label="今日活跃客户端">
-              {{ usageStats.today_active_clients || 0 }}
-            </a-descriptions-item>
-            <a-descriptions-item label="本月总启动次数">
-              {{ usageStats.month_total_starts || 0 }}
-            </a-descriptions-item>
-            <a-descriptions-item label="本月活跃客户端">
-              {{ usageStats.month_active_clients || 0 }}
-            </a-descriptions-item>
-          </a-descriptions>
-        </a-card>
+        <Dashboard />
       </a-tab-pane>
 
       <a-tab-pane key="logs" tab="审计日志">
+        <a-space style="margin-bottom: 16px;">
+          <a-button @click="handleExportLogs" :loading="logsLoading">
+            <export-outlined />
+            导出
+          </a-button>
+          <a-button @click="fetchAuditLogs" :loading="logsLoading">
+            <reload-outlined />
+            刷新
+          </a-button>
+        </a-space>
         <a-table
           :columns="logColumns"
           :data-source="auditLogs"
@@ -142,13 +114,16 @@
           @change="handleLogTableChange"
           row-key="id"
           size="small"
+          :scroll="{ x: 1200 }"
         >
           <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'action'">
-              <a-tag>{{ record.action }}</a-tag>
-            </template>
-            <template v-else-if="column.key === 'created_at'">
+            <template v-if="column.key === 'created_at'">
               {{ formatDateTime(record.created_at) }}
+            </template>
+            <template v-if="column.key === 'user_agent'">
+              <a-tooltip :title="record.user_agent">
+                {{ record.user_agent }}
+              </a-tooltip>
             </template>
           </template>
         </a-table>
@@ -158,12 +133,34 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { message } from 'ant-design-vue'
+import * as XLSX from 'xlsx'
+import {
+  UserOutlined,
+  CheckCircleOutlined,
+  MinusCircleOutlined,
+  ThunderboltOutlined,
+  KeyOutlined,
+  SafetyCertificateOutlined,
+  ExperimentOutlined,
+  CheckOutlined,
+  LockOutlined,
+  CodeOutlined,
+  DownloadOutlined,
+  PlayCircleOutlined,
+  TeamOutlined,
+  ClockCircleOutlined,
+  ExportOutlined,
+  ReloadOutlined
+} from '@ant-design/icons-vue'
 import { getSystemSettings, updateSystemSettings, getSystemStats, getAuditLogs } from '@/api/system'
 import { formatDateTime } from '@/utils/format'
+import { useSystemStore } from '@/stores/system'
+import Dashboard from './Dashboard.vue'
 
 const activeTab = ref('general')
+const systemStore = useSystemStore()
 
 const generalSettings = reactive({
   site_name: 'RedEdge 后台管理系统',
@@ -184,7 +181,6 @@ const heartbeatSettings = reactive({
 
 const statsLoading = ref(false)
 const systemStats = reactive({})
-const usageStats = reactive({})
 
 const logsLoading = ref(false)
 const auditLogs = ref([])
@@ -196,15 +192,73 @@ const logPagination = reactive({
   showTotal: (total) => `共 ${total} 条`
 })
 
-const logColumns = [
-  { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
-  { title: '用户', dataIndex: 'user_id', key: 'user_id', width: 100 },
-  { title: '操作', dataIndex: 'action', key: 'action' },
-  { title: '资源类型', dataIndex: 'resource_type', key: 'resource_type' },
-  { title: '资源ID', dataIndex: 'resource_id', key: 'resource_id' },
-  { title: 'IP地址', dataIndex: 'ip_address', key: 'ip_address' },
-  { title: '时间', dataIndex: 'created_at', key: 'created_at', width: 180 }
-]
+// 动态生成筛选选项
+const getUniqueValues = (data, key) => {
+  const values = data.map(item => item[key]).filter(Boolean)
+  return [...new Set(values)].map(value => ({ text: value, value }))
+}
+
+const logColumns = computed(() => [
+  { 
+    title: 'ID', 
+    dataIndex: 'id', 
+    key: 'id', 
+    width: 60,
+    sorter: (a, b) => a.id - b.id,
+    fixed: 'left',
+  },
+  { 
+    title: '用户', 
+    dataIndex: 'username', 
+    key: 'username', 
+    width: 100,
+    sorter: (a, b) => (a.username || '').localeCompare(b.username || ''),
+    filters: getUniqueValues(auditLogs.value, 'username'),
+    onFilter: (value, record) => record.username === value,
+    fixed: 'left',
+  },
+  { 
+    title: '操作', 
+    dataIndex: 'action', 
+    key: 'action',
+    sorter: (a, b) => (a.action || '').localeCompare(b.action || ''),
+    filters: getUniqueValues(auditLogs.value, 'action'),
+    onFilter: (value, record) => record.action === value
+  },
+  { 
+    title: '资源类型', 
+    dataIndex: 'resource_type', 
+    key: 'resource_type',
+    sorter: (a, b) => (a.resource_type || '').localeCompare(b.resource_type || ''),
+    filters: getUniqueValues(auditLogs.value, 'resource_type'),
+    onFilter: (value, record) => record.resource_type === value
+  },
+  { 
+    title: 'IP地址', 
+    dataIndex: 'ip_address', 
+    key: 'ip_address',
+    sorter: (a, b) => (a.ip_address || '').localeCompare(b.ip_address || ''),
+    filters: getUniqueValues(auditLogs.value, 'ip_address'),
+    onFilter: (value, record) => record.ip_address === value,
+    width: 100,
+  },
+  { 
+    title: '请求UA', 
+    dataIndex: 'user_agent', 
+    key: 'user_agent',
+    sorter: (a, b) => (a.user_agent || '').localeCompare(b.user_agent || ''),
+    filters: getUniqueValues(auditLogs.value, 'user_agent'),
+    onFilter: (value, record) => record.user_agent === value,
+    ellipsis: true
+  },
+  { 
+    title: '时间', 
+    dataIndex: 'created_at', 
+    key: 'created_at', 
+    width: 180,
+    sorter: (a, b) => new Date(a.created_at) - new Date(b.created_at)
+  }
+])
 
 const handleSaveGeneral = async () => {
   const res = await updateSystemSettings({
@@ -213,6 +267,10 @@ const handleSaveGeneral = async () => {
 
   if (res.success) {
     message.success('保存成功')
+    // 更新 store 中的站点名称
+    systemStore.settings.site_name = generalSettings.site_name
+    // 刷新页面标题
+    document.title = `${generalSettings.site_name || 'RedEdge 后台管理系统'}`
   } else {
     message.error(res.error || '保存失败')
   }
@@ -246,9 +304,10 @@ const fetchSettings = async () => {
   const res = await getSystemSettings()
 
   if (res.success && res.data) {
-    Object.assign(generalSettings, res.data.general || {})
-    Object.assign(licenseSettings, res.data.license || {})
-    Object.assign(heartbeatSettings, res.data.heartbeat || {})
+    console.log(res)
+    Object.assign(generalSettings, res.data || {})
+    Object.assign(licenseSettings, res.data || {})
+    Object.assign(heartbeatSettings, res.data || {})
   }
 }
 
@@ -258,8 +317,8 @@ const fetchStats = async () => {
     const res = await getSystemStats()
 
     if (res.success) {
-      Object.assign(systemStats, res.data.system || {})
-      Object.assign(usageStats, res.data.usage || {})
+      console.log(res)
+      Object.assign(systemStats, res.data || {})
     }
   } finally {
     statsLoading.value = false
@@ -269,14 +328,38 @@ const fetchStats = async () => {
 const fetchAuditLogs = async () => {
   logsLoading.value = true
   try {
-    const res = await getAuditLogs({
-      page: logPagination.current,
-      per_page: logPagination.pageSize
-    })
+    const perPage = 200
+    let page = 1
+    let allLogs = []
+    let total = 0
 
-    if (res.success) {
-      auditLogs.value = res.data.items
-      logPagination.total = res.data.total
+    while (true) {
+      const res = await getAuditLogs({
+        page,
+        per_page: perPage
+      })
+
+      if (!res.success) {
+        break
+      }
+
+      const batch = res.data || []
+      allLogs = allLogs.concat(batch)
+      total = res.total ?? allLogs.length
+
+      if (allLogs.length >= total || batch.length === 0) {
+        break
+      }
+
+      page += 1
+    }
+
+    auditLogs.value = allLogs
+    logPagination.total = allLogs.length
+
+    const maxPage = Math.max(1, Math.ceil(allLogs.length / logPagination.pageSize))
+    if (logPagination.current > maxPage) {
+      logPagination.current = 1
     }
   } finally {
     logsLoading.value = false
@@ -286,7 +369,6 @@ const fetchAuditLogs = async () => {
 const handleLogTableChange = (pag) => {
   logPagination.current = pag.current
   logPagination.pageSize = pag.pageSize
-  fetchAuditLogs()
 }
 
 onMounted(() => {
@@ -294,6 +376,24 @@ onMounted(() => {
   fetchStats()
   fetchAuditLogs()
 })
+
+const handleExportLogs = () => {
+  const data = auditLogs.value.map(item => ({
+    ID: item.id,
+    用户: item.username || '-',
+    操作: item.action || '-',
+    资源类型: item.resource_type || '-',
+    IP地址: item.ip_address || '-',
+    请求UA: item.user_agent || '-',
+    时间: formatDateTime(item.created_at)
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(data)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, '审计日志')
+  XLSX.writeFile(wb, `审计日志_${new Date().toLocaleDateString()}.xlsx`)
+  message.success('导出成功')
+}
 </script>
 
 <style scoped>

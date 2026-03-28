@@ -3,6 +3,7 @@
  */
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useSystemStore } from '@/stores/system'
 
 const routes = [
   {
@@ -27,7 +28,7 @@ const routes = [
         path: 'cameras',
         name: 'CameraManagement',
         component: () => import('@/views/CameraManagement.vue'),
-        meta: { title: '相机配置管理' }
+        meta: { title: '相机管理' }
       },
       {
         path: 'clients',
@@ -78,18 +79,25 @@ const router = createRouter({
   routes
 })
 
+// 获取站点名称
+const getSiteName = () => {
+  const systemStore = useSystemStore()
+  return systemStore.siteName || 'RedEdge 后台管理系统'
+}
+
 // 路由守卫
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
 
   // 设置页面标题
+  const siteName = getSiteName()
   if (to.meta.title) {
-    document.title = `${to.meta.title} - RedEdge 后台管理系统`
+    document.title = `${to.meta.title} - ${siteName}`
   } else {
-    document.title = 'RedEdge 后台管理系统'
+    document.title = siteName
   }
 
-  // 检查是否需要认证
+  // 检查是否需要认证（只有明确设置 requiresAuth: false 才不需要认证）
   if (to.meta.requiresAuth !== false) {
     if (!authStore.isLoggedIn) {
       next({ name: 'Login', query: { redirect: to.fullPath } })

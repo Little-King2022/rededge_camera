@@ -2,26 +2,15 @@
   <div class="client-management">
     <div class="toolbar">
       <a-space>
-        <a-select
-          v-model:value="filters.license_status"
-          placeholder="授权状态"
-          style="width: 120px"
-          allowClear
-          @change="fetchData"
-        >
+        <a-select v-model:value="filters.license_status" placeholder="授权状态" style="width: 120px" allowClear
+          @change="fetchData">
           <a-select-option value="trial">试用</a-select-option>
           <a-select-option value="activated">已激活</a-select-option>
           <a-select-option value="expired">已过期</a-select-option>
           <a-select-option value="revoked">已吊销</a-select-option>
         </a-select>
 
-        <a-select
-          v-model:value="filters.platform"
-          placeholder="平台"
-          style="width: 120px"
-          allowClear
-          @change="fetchData"
-        >
+        <a-select v-model:value="filters.platform" placeholder="平台" style="width: 120px" allowClear @change="fetchData">
           <a-select-option value="win32">Windows</a-select-option>
           <a-select-option value="darwin">macOS</a-select-option>
           <a-select-option value="linux">Linux</a-select-option>
@@ -31,23 +20,24 @@
           <reload-outlined />
           刷新
         </a-button>
+
+        <a-button @click="handleExport">
+          <export-outlined />
+          导出
+        </a-button>
       </a-space>
     </div>
 
-    <a-table
-      :columns="columns"
-      :data-source="clientStore.clients"
-      :loading="clientStore.loading"
-      :pagination="pagination"
-      @change="handleTableChange"
-      row-key="id"
-    >
+    <a-table :columns="columns" :data-source="clientStore.clients" :loading="clientStore.loading"
+      :pagination="pagination" @change="handleTableChange" row-key="id" :scroll="{ x: 1200 }">
       <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'online_status'">
-          <a-badge
-            :status="isOnline(record) ? 'success' : 'default'"
-            :text="isOnline(record) ? '在线' : '离线'"
-          />
+        <template v-if="column.key === 'device_fingerprint'">
+          <a-tooltip :title="record.device_fingerprint" placement="bottomLeft">
+            {{ record.device_fingerprint }}
+          </a-tooltip>
+        </template>
+        <template v-else-if="column.key === 'online_status'">
+          <a-badge :status="isOnline(record) ? 'success' : 'default'" :text="isOnline(record) ? '在线' : '离线'" />
         </template>
         <template v-else-if="column.key === 'license_status'">
           <a-tag :color="getLicenseStatusColor(record.license_status)">
@@ -76,11 +66,8 @@
             <a-button type="link" size="small" @click="showAssignLicense(record)">
               分配授权
             </a-button>
-            <a-popconfirm
-              v-if="record.license_status === 'activated'"
-              title="确定吊销此客户端的授权吗？"
-              @confirm="handleRevoke(record)"
-            >
+            <a-popconfirm v-if="record.license_status === 'activated'" title="确定吊销此客户端的授权吗？"
+              @confirm="handleRevoke(record)">
               <a-button type="link" size="small" danger>吊销授权</a-button>
             </a-popconfirm>
           </a-space>
@@ -88,12 +75,8 @@
       </template>
     </a-table>
 
-    <!-- 客户端详情抽屉 -->
-    <a-drawer
-      v-model:open="detailDrawerVisible"
-      title="客户端详情"
-      width="600"
-    >
+    <!-- 客户端详情弹窗 -->
+    <a-modal v-model:open="detailModalVisible" title="客户端详情" :footer="null" width="50%">
       <div v-if="currentClient">
         <a-descriptions :column="1" bordered>
           <a-descriptions-item label="设备指纹">
@@ -109,7 +92,7 @@
             {{ formatArch(currentClient.arch) }}
           </a-descriptions-item>
           <a-descriptions-item label="CPU型号">
-            {{ currentClient.cpu_model }}
+            {{ currentClient.cpu_model || '-' }}
           </a-descriptions-item>
           <a-descriptions-item label="内存">
             {{ formatFileSize(currentClient.total_memory) }}
@@ -144,39 +127,20 @@
           </a-descriptions-item>
         </a-descriptions>
       </div>
-    </a-drawer>
+    </a-modal>
 
     <!-- 分配相机配置对话框 -->
-    <a-modal
-      v-model:open="assignCameraModalVisible"
-      title="分配相机配置"
-      @ok="handleAssignCamera"
-    >
-      <a-select
-        v-model:value="selectedCameraId"
-        placeholder="请选择相机配置"
-        style="width: 100%"
-      >
-        <a-select-option
-          v-for="camera in cameraStore.cameras"
-          :key="camera.id"
-          :value="camera.id"
-        >
+    <a-modal v-model:open="assignCameraModalVisible" title="分配相机配置" @ok="handleAssignCamera">
+      <a-select v-model:value="selectedCameraId" placeholder="请选择相机配置" style="width: 100%">
+        <a-select-option v-for="camera in cameraStore.cameras" :key="camera.id" :value="camera.id">
           {{ camera.name }}
         </a-select-option>
       </a-select>
     </a-modal>
 
     <!-- 分配授权码对话框 -->
-    <a-modal
-      v-model:open="assignLicenseModalVisible"
-      title="分配授权码"
-      @ok="handleAssignLicense"
-    >
-      <a-input
-        v-model:value="inputLicenseCode"
-        placeholder="请输入授权码"
-      />
+    <a-modal v-model:open="assignLicenseModalVisible" title="分配授权码" @ok="handleAssignLicense">
+      <a-input v-model:value="inputLicenseCode" placeholder="请输入授权码" />
     </a-modal>
   </div>
 </template>
@@ -184,6 +148,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
+import * as XLSX from 'xlsx'
 import { useClientStore } from '@/stores/client'
 import { useCameraStore } from '@/stores/camera'
 import {
@@ -193,7 +158,7 @@ import {
   formatFileSize,
   formatDateTime
 } from '@/utils/format'
-import { ReloadOutlined } from '@ant-design/icons-vue'
+import { ReloadOutlined, ExportOutlined } from '@ant-design/icons-vue'
 
 const clientStore = useClientStore()
 const cameraStore = useCameraStore()
@@ -211,7 +176,7 @@ const pagination = reactive({
   showTotal: (total) => `共 ${total} 条`
 })
 
-const detailDrawerVisible = ref(false)
+const detailModalVisible = ref(false)
 const currentClient = ref(null)
 
 const assignCameraModalVisible = ref(false)
@@ -222,14 +187,14 @@ const assignLicenseModalVisible = ref(false)
 const inputLicenseCode = ref('')
 
 const columns = [
-  { title: '设备指纹', dataIndex: 'device_fingerprint', key: 'device_fingerprint', width: 200 },
-  { title: '主机名', dataIndex: 'hostname', key: 'hostname' },
-  { title: '平台', dataIndex: 'platform', key: 'platform' },
-  { title: '在线状态', key: 'online_status' },
-  { title: '授权状态', dataIndex: 'license_status', key: 'license_status' },
-  { title: '授权模式', key: 'offline_mode' },
-  { title: '最后心跳', dataIndex: 'last_heartbeat_at', key: 'last_heartbeat_at' },
-  { title: '操作', key: 'action', width: 300 }
+  { title: '主机名', dataIndex: 'hostname', key: 'hostname', width: 150, fixed: 'left' },
+  { title: '设备指纹', dataIndex: 'device_fingerprint', key: 'device_fingerprint', width: 220, ellipsis: true },
+  { title: '平台', dataIndex: 'platform', key: 'platform', width: 100 },
+  { title: '在线状态', key: 'online_status', width: 100 },
+  { title: '授权状态', dataIndex: 'license_status', key: 'license_status', width: 100 },
+  { title: '授权模式', key: 'offline_mode', width: 100 },
+  { title: '最后心跳', dataIndex: 'last_heartbeat_at', key: 'last_heartbeat_at', width: 180 },
+  { title: '操作', key: 'action', width: 300, fixed: 'right' }
 ]
 
 const isOnline = (client) => {
@@ -252,7 +217,7 @@ const showDetail = async (record) => {
   const result = await clientStore.fetchClientDetail(record.id)
   if (result.success) {
     currentClient.value = clientStore.currentClient
-    detailDrawerVisible.value = true
+    detailModalVisible.value = true
   }
 }
 
@@ -330,6 +295,26 @@ onMounted(() => {
   fetchData()
   cameraStore.fetchCameras()
 })
+
+const handleExport = () => {
+  const data = clientStore.clients.map(item => ({
+    主机名: item.hostname,
+    设备指纹: item.device_fingerprint,
+    平台: formatPlatform(item.platform),
+    在线状态: isOnline(item) ? '在线' : '离线',
+    授权状态: formatLicenseStatus(item.license_status),
+    授权模式: item.offline_mode ? '离线模式' : '在线模式',
+    应用版本: item.app_version || '-',
+    IP地址: item.ip_address || '-',
+    最后心跳: formatDateTime(item.last_heartbeat_at)
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(data)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, '客户端列表')
+  XLSX.writeFile(wb, `客户端列表_${new Date().toLocaleDateString()}.xlsx`)
+  message.success('导出成功')
+}
 </script>
 
 <style scoped>

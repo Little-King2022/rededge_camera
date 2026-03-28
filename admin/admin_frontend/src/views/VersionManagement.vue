@@ -1,10 +1,16 @@
 <template>
   <div class="version-management">
     <div class="toolbar">
-      <a-button type="primary" @click="showUploadModal">
-        <upload-outlined />
-        上传安装包
-      </a-button>
+      <a-space>
+        <a-button type="primary" @click="showUploadModal">
+          <upload-outlined />
+          上传安装包
+        </a-button>
+        <a-button @click="handleExport">
+          <export-outlined />
+          导出
+        </a-button>
+      </a-space>
     </div>
 
     <a-table
@@ -14,6 +20,7 @@
       :pagination="pagination"
       @change="handleTableChange"
       row-key="id"
+      :scroll="{ x: 1100 }"
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'platform'">
@@ -186,9 +193,10 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
+import * as XLSX from 'xlsx'
 import { uploadVersion, getVersionList, setLatestVersion, deleteVersion, getDownloadUrl } from '@/api/version'
 import { formatPlatform, formatArch, formatFileSize, formatDateTime } from '@/utils/format'
-import { UploadOutlined } from '@ant-design/icons-vue'
+import { UploadOutlined, ExportOutlined } from '@ant-design/icons-vue'
 
 const loading = ref(false)
 const versions = ref([])
@@ -220,15 +228,15 @@ const detailModalVisible = ref(false)
 const currentVersion = ref(null)
 
 const columns = [
-  { title: '版本号', dataIndex: 'version', key: 'version' },
-  { title: '平台', key: 'platform' },
-  { title: '类型', key: 'release_type' },
-  { title: '文件大小', key: 'file_size' },
-  { title: '最新', key: 'is_latest' },
-  { title: '强制', key: 'is_mandatory' },
-  { title: '下载数', dataIndex: 'download_count', key: 'download_count' },
-  { title: '发布时间', key: 'published_at' },
-  { title: '操作', key: 'action', width: 250 }
+  { title: '版本号', dataIndex: 'version', key: 'version', width: 120, fixed: 'left' },
+  { title: '平台', key: 'platform', width: 120 },
+  { title: '类型', key: 'release_type', width: 100 },
+  { title: '文件大小', key: 'file_size', width: 100 },
+  { title: '最新', key: 'is_latest', width: 70 },
+  { title: '强制', key: 'is_mandatory', width: 70 },
+  { title: '下载数', dataIndex: 'download_count', key: 'download_count', width: 80 },
+  { title: '发布时间', key: 'published_at', width: 180 },
+  { title: '操作', key: 'action', width: 250, fixed: 'right' }
 ]
 
 const getReleaseTypeColor = (type) => {
@@ -352,6 +360,25 @@ const fetchData = async () => {
 onMounted(() => {
   fetchData()
 })
+
+const handleExport = () => {
+  const data = versions.value.map(item => ({
+    版本号: item.version,
+    平台: `${formatPlatform(item.platform)} (${formatArch(item.arch)})`,
+    类型: getReleaseTypeText(item.release_type),
+    文件大小: formatFileSize(item.file_size),
+    最新: item.is_latest ? '是' : '否',
+    强制更新: item.is_mandatory ? '是' : '否',
+    下载次数: item.download_count,
+    发布时间: formatDateTime(item.published_at)
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(data)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, '版本列表')
+  XLSX.writeFile(wb, `版本列表_${new Date().toLocaleDateString()}.xlsx`)
+  message.success('导出成功')
+}
 </script>
 
 <style scoped>

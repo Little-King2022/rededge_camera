@@ -8,7 +8,14 @@
       width="240"
     >
       <div class="logo">
-        <span v-if="!collapsed">RedEdge 管理系统</span>
+        <span v-if="!collapsed">
+          <div style="font-size: 15px; letter-spacing: 3px; font-weight: normal; color: gainsboro; text-align: center;">
+            农作物低空监测平台
+          </div>
+          <div style="font-size: 22px; letter-spacing: 5px; font-weight: normal; margin-top: 4px; font-weight: bold; text-align: center;">
+            后台管理系统
+          </div>
+        </span>
         <span v-else class="logo-mini">RE</span>
       </div>
 
@@ -25,7 +32,7 @@
 
         <a-menu-item key="/cameras">
           <camera-outlined />
-          <span>相机配置</span>
+          <span>相机管理</span>
         </a-menu-item>
 
         <a-menu-item key="/clients">
@@ -97,6 +104,34 @@
         <router-view />
       </a-layout-content>
     </a-layout>
+
+    <!-- 用户信息弹窗 -->
+    <a-modal
+      v-model:open="profileModalVisible"
+      title="个人信息"
+      :footer="null"
+      :width="400"
+    >
+      <a-descriptions :column="1" bordered size="small">
+        <a-descriptions-item label="用户名">
+          {{ authStore.userInfo?.username }}
+        </a-descriptions-item>
+        <a-descriptions-item label="角色">
+          <a-tag :color="getRoleColor(authStore.userInfo?.role)">
+            {{ getRoleName(authStore.userInfo?.role) }}
+          </a-tag>
+        </a-descriptions-item>
+        <a-descriptions-item label="邮箱">
+          {{ authStore.userInfo?.email || '-' }}
+        </a-descriptions-item>
+        <a-descriptions-item label="创建时间">
+          {{ formatDateTime(authStore.userInfo?.created_at) }}
+        </a-descriptions-item>
+        <a-descriptions-item label="最后登录">
+          {{ formatDateTime(authStore.userInfo?.last_login_at) }}
+        </a-descriptions-item>
+      </a-descriptions>
+    </a-modal>
   </a-layout>
 </template>
 
@@ -104,6 +139,8 @@
 import { ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import dayjs from 'dayjs'
+import 'dayjs/locale/zh-cn'
 import {
   MenuUnfoldOutlined,
   MenuFoldOutlined,
@@ -117,12 +154,15 @@ import {
   LogoutOutlined
 } from '@ant-design/icons-vue'
 
+dayjs.locale('zh-cn')
+
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
 const collapsed = ref(false)
 const selectedKeys = ref([route.path])
+const profileModalVisible = ref(false)
 
 watch(
   () => route.path,
@@ -136,11 +176,36 @@ const handleMenuClick = ({ key }) => {
 }
 
 const handleProfile = () => {
-  // TODO: 打开个人信息对话框
+  profileModalVisible.value = true
 }
 
 const handleLogout = () => {
   authStore.logout()
+}
+
+const roleNames = {
+  super_admin: '超级管理员',
+  admin: '管理员',
+  operator: '操作员'
+}
+
+const roleColors = {
+  super_admin: 'red',
+  admin: 'blue',
+  operator: 'green'
+}
+
+const getRoleName = (role) => {
+  return roleNames[role] || role || '-'
+}
+
+const getRoleColor = (role) => {
+  return roleColors[role] || 'default'
+}
+
+const formatDateTime = (datetime) => {
+  if (!datetime) return '-'
+  return dayjs(datetime).format('YYYY年M月D日 HH:mm:ss')
 }
 </script>
 

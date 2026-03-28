@@ -1,6 +1,6 @@
 ﻿export default {
   app: {
-    title: 'RedEdge监测终端',
+    title: '农作物低空监测终端',
     windowControls: {
       exitConfirmTitle: '确认退出',
       exitConfirmContent: '确定要退出程序吗？',

@@ -18,6 +18,7 @@
       :pagination="pagination"
       @change="handleTableChange"
       row-key="id"
+      :scroll="{ x: 1000 }"
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'code'">
@@ -191,6 +192,7 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { message } from 'ant-design-vue'
+import * as XLSX from 'xlsx'
 import { useLicenseStore } from '@/stores/license'
 import { formatLicenseType, formatDateTime, formatLicenseStatus } from '@/utils/format'
 import { PlusOutlined, ExportOutlined } from '@ant-design/icons-vue'
@@ -242,14 +244,14 @@ const formatLogTitle = (event) => {
 }
 
 const columns = [
-  { title: '授权码', dataIndex: 'code', key: 'code', width: 250 },
-  { title: '类型', dataIndex: 'license_type', key: 'license_type' },
-  { title: '模式', key: 'offline_mode' },
-  { title: '激活数', key: 'activations' },
-  { title: '证书状态', dataIndex: 'license_status', key: 'license_status' },
-  { title: '状态', dataIndex: 'is_active', key: 'is_active' },
-  { title: '到期时间', dataIndex: 'expires_at', key: 'expires_at' },
-  { title: '操作', key: 'action', width: 150 }
+  { title: '授权码', dataIndex: 'code', key: 'code', width: 250, fixed: 'left' },
+  { title: '类型', dataIndex: 'license_type', key: 'license_type', width: 100 },
+  { title: '模式', key: 'offline_mode', width: 80 },
+  { title: '激活数', key: 'activations', width: 100 },
+  { title: '证书状态', dataIndex: 'license_status', key: 'license_status', width: 100 },
+  { title: '状态', dataIndex: 'is_active', key: 'is_active', width: 80 },
+  { title: '到期时间', dataIndex: 'expires_at', key: 'expires_at', width: 180 },
+  { title: '操作', key: 'action', width: 150, fixed: 'right' }
 ]
 
 const showGenerateModal = () => {
@@ -297,13 +299,22 @@ const handleRevoke = async (record) => {
   }
 }
 
-const handleExport = async () => {
-  const result = await licenseStore.exportLicenses()
-  if (result.success) {
-    message.success('导出成功')
-  } else {
-    message.error(result.error || '导出失败')
-  }
+const handleExport = () => {
+  const data = licenseStore.licenses.map(item => ({
+    授权码: item.code,
+    类型: formatLicenseType(item.license_type),
+    模式: item.offline_mode ? '离线' : '在线',
+    激活数: `${item.current_activations}/${item.max_activations}`,
+    证书状态: formatLicenseStatus(item.license_status),
+    状态: item.is_active ? '有效' : '无效',
+    到期时间: formatDateTime(item.expires_at)
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(data)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, '授权码列表')
+  XLSX.writeFile(wb, `授权码列表_${new Date().toLocaleDateString()}.xlsx`)
+  message.success('导出成功')
 }
 
 const handleTableChange = (pag) => {
