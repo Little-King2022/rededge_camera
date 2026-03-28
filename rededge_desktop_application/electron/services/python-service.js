@@ -610,6 +610,46 @@ class PythonServiceManager {
       method: 'POST'
     })
   }
+
+  /**
+   * 获取预设光谱指数列表
+   */
+  async getAnalysisPresets() {
+    return this.request('/api/analysis/presets')
+  }
+
+  /**
+   * 提交光谱分析任务
+   */
+  async submitAnalysisJob(params) {
+    return this.request('/api/analysis/submit', {
+      method: 'POST',
+      body: {
+        tif_path: params.tifPath,
+        index_type: params.indexType,
+        custom_formula: params.customFormula,
+        output_dir: params.outputDir,
+        output_basename: params.outputBasename,
+        colormap: params.colormap
+      }
+    })
+  }
+
+  /**
+   * 获取分析任务状态
+   */
+  async getAnalysisJobStatus(jobId) {
+    return this.request(`/api/analysis/status/${jobId}`)
+  }
+
+  /**
+   * 取消分析任务
+   */
+  async cancelAnalysisJob(jobId) {
+    return this.request(`/api/analysis/cancel/${jobId}`, {
+      method: 'POST'
+    })
+  }
 }
 
 // 导出单例

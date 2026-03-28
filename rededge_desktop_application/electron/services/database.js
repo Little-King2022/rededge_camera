@@ -49,7 +49,9 @@ const store = new Store({
     // 配准任务记录
     alignment_jobs: [],
     // 批处理任务记录
-    batch_jobs: []
+    batch_jobs: [],
+    // 光谱分析任务记录
+    analysis_jobs: []
   }
 })
 
@@ -702,6 +704,66 @@ class DatabaseService {
     const jobs = this.getAllBatchJobs()
     const filtered = jobs.filter(j => j.id !== id)
     this.store.set('batch_jobs', filtered)
+  }
+
+  // Analysis Jobs Repository
+  getAllAnalysisJobs() {
+    return this.store.get('analysis_jobs', [])
+  }
+
+  getAnalysisJob(id) {
+    const jobs = this.getAllAnalysisJobs()
+    return jobs.find(j => j.id === id) || null
+  }
+
+  createAnalysisJob(job) {
+    const jobs = this.getAllAnalysisJobs()
+    const now = new Date().toISOString()
+    const id = this._getNextId('analysis_jobs')
+
+    const newJob = {
+      id,
+      job_id: job.job_id,
+      tif_path: job.tif_path,
+      index_type: job.index_type,
+      index_name: job.index_name || job.index_type.toUpperCase(),
+      custom_formula: job.custom_formula || null,
+      output_dir: job.output_dir,
+      output_basename: job.output_basename,
+      status: 'pending',
+      progress: 0,
+      message: '排队等待',
+      result: null,
+      error_message: null,
+      started_at: null,
+      completed_at: null,
+      created_at: now
+    }
+
+    jobs.push(newJob)
+    this.store.set('analysis_jobs', jobs)
+    return id
+  }
+
+  updateAnalysisJobByJobId(jobId, updates) {
+    const jobs = this.getAllAnalysisJobs()
+    const index = jobs.findIndex(j => j.job_id === jobId)
+
+    if (index === -1) return
+
+    jobs[index] = { ...jobs[index], ...updates }
+    this.store.set('analysis_jobs', jobs)
+  }
+
+  getRecentAnalysisJobs(limit = 50) {
+    const jobs = this.getAllAnalysisJobs()
+    return jobs.slice(-limit).reverse()
+  }
+
+  deleteAnalysisJob(id) {
+    const jobs = this.getAllAnalysisJobs()
+    const filtered = jobs.filter(j => j.id !== id)
+    this.store.set('analysis_jobs', filtered)
   }
 
   close() {

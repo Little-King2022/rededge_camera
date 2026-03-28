@@ -179,6 +179,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getJobHistory: (limit) => ipcRenderer.invoke('batch:getJobHistory', limit)
   },
 
+  // Analysis APIs
+  analysis: {
+    selectTifFile: () => ipcRenderer.invoke('analysis:selectTifFile'),
+    selectOutputDirectory: () => ipcRenderer.invoke('analysis:selectOutputDirectory'),
+    getPresets: () => ipcRenderer.invoke('analysis:getPresets'),
+    submitJob: (params) => ipcRenderer.invoke('analysis:submitJob', params),
+    getJobStatus: (jobId) => ipcRenderer.invoke('analysis:getJobStatus', jobId),
+    cancelJob: (jobId) => ipcRenderer.invoke('analysis:cancelJob', jobId),
+    deleteJob: (localJobId) => ipcRenderer.invoke('analysis:deleteJob', localJobId),
+    getJobs: (limit) => ipcRenderer.invoke('analysis:getJobs', limit),
+    openOutputFile: (filePath) => ipcRenderer.invoke('analysis:openOutputFile', filePath),
+    showInFolder: (filePath) => ipcRenderer.invoke('analysis:showInFolder', filePath),
+    readFileAsBase64: (filePath) => ipcRenderer.invoke('analysis:readFileAsBase64', filePath),
+    getModelList: () => ipcRenderer.invoke('analysis:getModelList')
+  },
+
   // System Info APIs
   system: {
     getInfo: () => ipcRenderer.invoke('system:getInfo'),

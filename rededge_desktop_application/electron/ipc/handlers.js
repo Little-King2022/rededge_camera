@@ -1,4 +1,4 @@
-import { ipcMain, app, dialog, shell, BrowserWindow } from 'electron'
+import { ipcMain, app, dialog, shell, BrowserWindow, net } from 'electron'
 import fs from 'fs/promises'
 import path from 'path'
 import os from 'os'
@@ -964,6 +964,146 @@ export function registerIPCHandlers() {
 
   ipcMain.handle('batch:getJobHistory', async (event, limit = 20) => {
     return database.getRecentBatchJobs(limit)
+  })
+
+  // ========== Analysis Handlers ==========
+
+  ipcMain.handle('analysis:selectTifFile', async () => {
+    const result = await dialog.showOpenDialog({
+      title: '选择5波段TIF影像',
+      filters: [{ name: 'TIF Images', extensions: ['tif', 'tiff'] }],
+      properties: ['openFile']
+    })
+
+    if (result.canceled || result.filePaths.length === 0) {
+      return { success: false, canceled: true }
+    }
+
+    return { success: true, filePath: result.filePaths[0] }
+  })
+
+  ipcMain.handle('analysis:selectOutputDirectory', async () => {
+    const result = await dialog.showOpenDialog({
+      title: '选择输出目录',
+      properties: ['openDirectory', 'createDirectory']
+    })
+
+    if (result.canceled || result.filePaths.length === 0) {
+      return { success: false, canceled: true }
+    }
+
+    return { success: true, directory: result.filePaths[0] }
+  })
+
+  ipcMain.handle('analysis:getPresets', async () => {
+    return await pythonService.getAnalysisPresets()
+  })
+
+  ipcMain.handle('analysis:submitJob', async (event, params) => {
+    const result = await pythonService.submitAnalysisJob(params)
+
+    if (result.success && result.job_id) {
+      const localId = database.createAnalysisJob({
+        job_id: result.job_id,
+        tif_path: params.tifPath,
+        index_type: params.indexType,
+        index_name: params.indexName || params.indexType.toUpperCase(),
+        custom_formula: params.customFormula || null,
+        output_dir: params.outputDir,
+        output_basename: params.outputBasename
+      })
+      result.local_job_id = localId
+    }
+
+    return result
+  })
+
+  ipcMain.handle('analysis:getJobStatus', async (event, jobId) => {
+    try {
+      const result = await pythonService.getAnalysisJobStatus(jobId)
+
+      if (result?.success) {
+        database.updateAnalysisJobByJobId(jobId, {
+          status: result.status,
+          progress: result.progress,
+          message: result.message,
+          error_message: result.error_message || null,
+          result: result.result || null,
+          completed_at: result.completed_at
+            ? new Date(result.completed_at * 1000).toISOString()
+            : null
+        })
+      }
+
+      return result
+    } catch (error) {
+      database.updateAnalysisJobByJobId(jobId, {
+        status: 'failed',
+        message: 'failed',
+        error_message: error.message,
+        completed_at: new Date().toISOString()
+      })
+      return { success: false, error: error.message }
+    }
+  })
+
+  ipcMain.handle('analysis:cancelJob', async (event, jobId) => {
+    const result = await pythonService.cancelAnalysisJob(jobId)
+    if (result.success) {
+      database.updateAnalysisJobByJobId(jobId, {
+        status: 'cancelled',
+        message: '已取消',
+        completed_at: new Date().toISOString()
+      })
+    }
+    return result
+  })
+
+  ipcMain.handle('analysis:deleteJob', async (event, localJobId) => {
+    database.deleteAnalysisJob(localJobId)
+    return { success: true }
+  })
+
+  ipcMain.handle('analysis:getJobs', async (event, limit = 50) => {
+    return database.getRecentAnalysisJobs(limit)
+  })
+
+  ipcMain.handle('analysis:openOutputFile', async (event, filePath) => {
+    if (!filePath || !await fs.access(filePath).then(() => true).catch(() => false)) {
+      return { success: false, error: 'File not found' }
+    }
+    await shell.openPath(filePath)
+    return { success: true }
+  })
+
+  ipcMain.handle('analysis:showInFolder', async (event, filePath) => {
+    if (filePath) {
+      shell.showItemInFolder(filePath)
+    }
+    return { success: true }
+  })
+
+  ipcMain.handle('analysis:readFileAsBase64', async (event, filePath) => {
+    try {
+      const data = await fs.readFile(filePath)
+      return { success: true, data: data.toString('base64'), mimeType: 'image/png' }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  })
+
+  // --- Model List (remote API) ---
+  ipcMain.handle('analysis:getModelList', async () => {
+    try {
+      const resp = await net.fetch('https://m1.apifoxmock.com/m1/7469582-7204181-default/model/list')
+      const json = await resp.json()
+      if (json.code === 200) {
+        return { success: true, models: json.rows || [], total: json.total || 0 }
+      }
+      return { success: false, error: json.msg || 'Unknown error' }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
   })
 
   // ========== System Info Handlers ==========

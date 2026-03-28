@@ -220,6 +220,10 @@ const currentPageHelp = computed(() => {
       title: t('statusBar.help.alignment.title'),
       content: t('statusBar.help.alignment.content')
     },
+    '/analysis': {
+      title: t('statusBar.help.analysis.title'),
+      content: t('statusBar.help.analysis.content')
+    },
     '/settings': {
       title: t('statusBar.help.settings.title'),
       content: t('statusBar.help.settings.content')

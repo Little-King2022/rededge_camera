@@ -446,8 +446,126 @@
     }
   },
   analysis: {
-    title: '分析视图',
-    placeholder: '这里将实现遥感分析功能。'
+    title: '影像分析工具',
+    menu: {
+      spectralCalculator: '光谱计算器',
+      aiModel: '神农大模型'
+    },
+    pythonServiceNotRunning: 'Python 处理服务未运行',
+    startService: '启动服务',
+    serviceStarted: 'Python 服务启动成功',
+    serviceStartFailed: 'Python 服务启动失败',
+    spectral: {
+      title: '光谱计算器',
+      description: '计算多光谱影像的光谱指数，输出TIF结果与PNG可视化预览',
+      inputSection: '输入影像',
+      selectTif: '选择5波段TIF',
+      tifPlaceholder: '请选择已完成辐射定标和波段配准的5波段TIF影像',
+      tifTip: '输入影像须为5波段TIF格式（Blue/Green/Red/RedEdge/NIR），且已完成辐射定标和波段配准。',
+      indexSection: '指数设置',
+      indexType: '指数类型',
+      presetIndex: '预设指数',
+      customIndex: '自定义公式',
+      selectPreset: '选择预设指数',
+      customFormula: '自定义公式',
+      formulaPlaceholder: '例如：(nir - red) / (nir + red)',
+      formulaHelp: '可使用变量：blue、green、red、rededge、nir（不区分大小写），支持基本数学运算与numpy函数（np.sqrt、np.log等）',
+      outputSection: '输出设置',
+      outputDir: '输出目录',
+      selectOutputDir: '选择目录',
+      outputBasename: '文件名（不含扩展名）',
+      outputBasenamePlaceholder: '留空则自动生成',
+      submitJob: '提交分析任务',
+      presets: {
+        ndvi: 'NDVI - 归一化植被指数',
+        ndre: 'NDRE - 归一化红边指数',
+        gndvi: 'GNDVI - 绿光归一化植被指数',
+        exg: 'ExG - 超绿指数',
+        evi: 'EVI - 增强植被指数',
+        savi: 'SAVI - 土壤调节植被指数',
+        ccci: 'CCCI - 冠层叶绿素含量指数'
+      }
+    },
+    jobs: {
+      title: '任务队列',
+      empty: '暂无分析任务',
+      columns: {
+        index: '指数',
+        inputFile: '输入文件',
+        status: '状态',
+        progress: '进度',
+        createdAt: '提交时间',
+        actions: '操作'
+      },
+      status: {
+        pending: '排队中',
+        running: '处理中',
+        completed: '已完成',
+        failed: '失败',
+        cancelled: '已取消'
+      },
+      actions: {
+        viewPng: '预览PNG',
+        openTif: '打开TIF',
+        showFolder: '在文件夹中显示',
+        cancel: '取消',
+        delete: '删除'
+      },
+      result: {
+        title: '分析结果预览',
+        stats: '统计信息',
+        min: '最小值',
+        max: '最大值',
+        mean: '均值',
+        std: '标准差',
+        validPixels: '有效像素',
+        totalPixels: '总像素',
+        outputTif: '输出TIF',
+        outputPng: '输出PNG'
+      }
+    },
+    aiModel: {
+      title: '神农大模型',
+      comingSoon: '功能开发中',
+      description: '基于神农大脑智慧农业大模型的云端AI分析，提供作物病害识别、产量预测、长势评估等智能服务。',
+      loadModels: '加载模型列表',
+      loadFailed: '模型列表加载失败',
+      retry: '重试',
+      empty: '暂无可用模型',
+      totalModels: '共 {count} 个模型',
+      allTypes: '全部',
+      searchPlaceholder: '搜索模型名称或描述...',
+      modelCode: '模型编码',
+      modelVersion: '版本',
+      modelType: '模型类型',
+      inputFormat: '输入格式',
+      outputFormat: '输出格式',
+      callCount: '调用次数',
+      lastCallTime: '最近调用',
+      noLastCall: '暂无调用',
+      modelDescription: '模型描述',
+      runModel: '调用模型',
+      runModelTip: '该功能正在开发中，敬请期待...',
+      selectModelTip: '请从左侧列表选择一个模型查看详情',
+      types: {
+        classic: '经典算法',
+        'DL Model': '深度学习',
+        detection: '检测模型'
+      }
+    },
+    messages: {
+      submitSuccess: '分析任务已提交',
+      submitFailed: '提交任务失败：{error}',
+      cancelSuccess: '任务已取消',
+      cancelFailed: '取消任务失败',
+      deleteConfirm: '确认删除该任务记录？',
+      deleteSuccess: '任务记录已删除',
+      selectTifFirst: '请先选择TIF影像文件',
+      selectOutputFirst: '请先选择输出目录',
+      selectIndexFirst: '请先选择光谱指数',
+      enterFormulaFirst: '请输入自定义公式',
+      fileNotFound: '输出文件不存在，可能尚未处理完成'
+    }
   },
   calibration: {
     pythonServiceNotRunning: 'Python 处理服务未运行',
@@ -770,7 +888,46 @@
       },
       alignment: {
         title: '影像配准',
-        content: '<p>影像配准页面用于多波段影像配准。</p><ul><li>生成配准矩阵</li><li>单张影像配准</li><li>批量影像配准</li><li>管理配准矩阵和任务记录</li></ul><p>配准应基于辐射定标后的反射率影像进行，以获得更好的效果。</p><p><strong>波段配准流程：</strong></p><ol><li>进入“影像配准” -> “生成配准矩阵”。</li><li>选择辐射定标后输出的 5 波段反射率 TIF（例如 output 目录下的同一组）。</li><li>对齐方法建议：RedEdge-M/MX 选 “opencv( ECC )”；RedEdge-P/Altum-PT 可选 “sift”。</li><li>参考波段建议选 Red/RedEdge（默认即可）。</li><li>点击“计算配准矩阵”，等待完成。</li><li>在“配准记录”中将该矩阵设为“激活”。</li><li>进入“批量配准”，选择输入目录（定标后的输出目录）与输出目录。</li><li>选择已激活的配准矩阵，点击开始。</li></ol>'
+        content: '<p>影像配准页面用于多波段影像配准。</p><ul><li>生成配准矩阵</li><li>单张影像配准</li><li>批量影像配准</li><li>管理配准矩阵和任务记录</li></ul><p>配准应基于辐射定标后的反射率影像进行，以获得更好的效果。</p><p><strong>波段配准流程：</strong></p><ol><li>进入”影像配准” -> “生成配准矩阵”。</li><li>选择辐射定标后输出的 5 波段反射率 TIF（例如 output 目录下的同一组）。</li><li>对齐方法建议：RedEdge-M/MX 选 “opencv( ECC )”；RedEdge-P/Altum-PT 可选 “sift”。</li><li>参考波段建议选 Red/RedEdge（默认即可）。</li><li>点击“计算配准矩阵”，等待完成。</li><li>在“配准记录”中将该矩阵设为“激活”。</li><li>进入“批量配准”，选择输入目录（定标后的输出目录）与输出目录。</li><li>选择已激活的配准矩阵，点击开始。</li></ol>'
+      },
+      analysis: {
+        title: '影像分析',
+        content: '<p>影像分析页面提供多光谱遥感影像的分析工具。</p>' +
+          '<h4>光谱计算器</h4>' +
+          '<p>基于 5 波段 TIF 影像计算各类光谱植被指数，输出结果 TIF 与可视化 PNG。</p>' +
+          '<p><strong>使用流程：</strong></p>' +
+          '<ol>' +
+            '<li>在左侧菜单选择”光谱计算器”。</li>' +
+            '<li>点击”浏览”选择一张已完成辐射定标和波段配准的 5 波段 TIF 影像。</li>' +
+            '<li>选择指数类型：' +
+              '<ul>' +
+                '<li><b>预设指数</b>：从下拉框选择 NDVI、NDRE、GNDVI、ExG、EVI、SAVI、CCCI。</li>' +
+                '<li><b>自定义公式</b>：使用计算器面板输入公式，可用变量：<code>blue</code>（475nm）、<code>green</code>（560nm）、<code>red</code>（668nm）、<code>rededge</code>（717nm）、<code>nir</code>（840nm），不区分大小写。支持 <code>+</code> <code>-</code> <code>*</code> <code>/</code> <code>**</code> 运算和 <code>np.sqrt()</code>、<code>np.log()</code>、<code>abs()</code> 等函数。</li>' +
+              '</ul>' +
+            '</li>' +
+            '<li>选择输出目录并指定文件名（可留空自动生成）。</li>' +
+            '<li>点击”提交分析任务”，任务将进入右侧队列异步处理。</li>' +
+          '</ol>' +
+          '<p><strong>任务队列：</strong></p>' +
+          '<ul>' +
+            '<li>右侧面板实时显示所有分析任务的状态和进度。</li>' +
+            '<li>任务完成后可直接预览 PNG 结果图（含图例与统计信息）、打开 TIF 文件或在文件夹中查看。</li>' +
+            '<li>可以取消排队中的任务或删除已完成的记录。</li>' +
+            '<li>面板可通过箭头按钮折叠/展开。</li>' +
+          '</ul>' +
+          '<h4>预设指数说明</h4>' +
+          '<table style=”width:100%;border-collapse:collapse;font-size:13px;margin-top:4px;”>' +
+            '<tr style=”background:#fafafa;”><th style=”text-align:left;padding:4px 8px;border-bottom:1px solid #eee;”>指数</th><th style=”text-align:left;padding:4px 8px;border-bottom:1px solid #eee;”>公式</th><th style=”text-align:left;padding:4px 8px;border-bottom:1px solid #eee;”>用途</th></tr>' +
+            '<tr><td style=”padding:4px 8px;”>NDVI</td><td style=”padding:4px 8px;”><code>(NIR−Red)/(NIR+Red)</code></td><td style=”padding:4px 8px;”>植被覆盖与健康状况</td></tr>' +
+            '<tr><td style=”padding:4px 8px;”>NDRE</td><td style=”padding:4px 8px;”><code>(NIR−RE)/(NIR+RE)</code></td><td style=”padding:4px 8px;”>叶绿素含量，高密度作物更灵敏</td></tr>' +
+            '<tr><td style=”padding:4px 8px;”>GNDVI</td><td style=”padding:4px 8px;”><code>(NIR−Green)/(NIR+Green)</code></td><td style=”padding:4px 8px;”>叶绿素浓度，与 NDVI 互补</td></tr>' +
+            '<tr><td style=”padding:4px 8px;”>ExG</td><td style=”padding:4px 8px;”><code>2G−R−B</code></td><td style=”padding:4px 8px;”>绿色植被分割，杂草检测</td></tr>' +
+            '<tr><td style=”padding:4px 8px;”>EVI</td><td style=”padding:4px 8px;”><code>2.5(NIR−R)/(NIR+6R−7.5B+1)</code></td><td style=”padding:4px 8px;”>高密度植被区域，减少大气干扰</td></tr>' +
+            '<tr><td style=”padding:4px 8px;”>SAVI</td><td style=”padding:4px 8px;”><code>1.5(NIR−R)/(NIR+R+0.5)</code></td><td style=”padding:4px 8px;”>裸土较多场景的植被分析</td></tr>' +
+            '<tr><td style=”padding:4px 8px;”>CCCI</td><td style=”padding:4px 8px;”><code>NDRE/NDVI</code></td><td style=”padding:4px 8px;”>冠层叶绿素估算、氮素管理</td></tr>' +
+          '</table>' +
+          '<h4>神农大模型</h4>' +
+          '<p>基于神农智慧农业大模型的云端 AI 分析工具，提供作物病害识别、产量预测、长势评估等智能服务，该功能正在开发中。</p>'
       },
       settings: {
         title: '设置',

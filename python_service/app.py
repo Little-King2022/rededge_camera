@@ -54,10 +54,12 @@ def create_app():
     from api.calibration import calibration_bp
     from api.alignment import alignment_bp
     from api.processing import processing_bp
+    from api.analysis import analysis_bp
 
     app.register_blueprint(calibration_bp, url_prefix='/api/calibration')
     app.register_blueprint(alignment_bp, url_prefix='/api/alignment')
     app.register_blueprint(processing_bp, url_prefix='/api/processing')
+    app.register_blueprint(analysis_bp, url_prefix='/api/analysis')
 
     # 健康检查端点
     @app.route('/api/health')

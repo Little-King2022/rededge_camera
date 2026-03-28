@@ -446,8 +446,126 @@ export default {
     }
   },
   analysis: {
-    title: 'Analysis View',
-    placeholder: 'This is where analysis features will be implemented.'
+    title: 'Image Analysis',
+    menu: {
+      spectralCalculator: 'Spectral Calculator',
+      aiModel: 'Shennong AI Model'
+    },
+    pythonServiceNotRunning: 'Python processing service is not running',
+    startService: 'Start Service',
+    serviceStarted: 'Python service started successfully',
+    serviceStartFailed: 'Failed to start Python service',
+    spectral: {
+      title: 'Spectral Calculator',
+      description: 'Calculate spectral indices from multispectral images and output TIF results with PNG visualizations',
+      inputSection: 'Input Image',
+      selectTif: 'Select 5-Band TIF',
+      tifPlaceholder: 'Select a 5-band TIF image (radiometrically calibrated and band-registered)',
+      tifTip: 'Input must be a 5-band TIF (Blue/Green/Red/RedEdge/NIR), already radiometrically calibrated and band-registered.',
+      indexSection: 'Index Settings',
+      indexType: 'Index Type',
+      presetIndex: 'Preset Index',
+      customIndex: 'Custom Formula',
+      selectPreset: 'Select preset index',
+      customFormula: 'Custom Formula',
+      formulaPlaceholder: 'e.g. (nir - red) / (nir + red)',
+      formulaHelp: 'Available variables: blue, green, red, rededge, nir (case insensitive). Supports arithmetic and numpy functions (np.sqrt, np.log, etc.)',
+      outputSection: 'Output Settings',
+      outputDir: 'Output Directory',
+      selectOutputDir: 'Select Directory',
+      outputBasename: 'Filename (without extension)',
+      outputBasenamePlaceholder: 'Leave empty to auto-generate',
+      submitJob: 'Submit Analysis Job',
+      presets: {
+        ndvi: 'NDVI - Normalized Difference Vegetation Index',
+        ndre: 'NDRE - Normalized Difference Red Edge Index',
+        gndvi: 'GNDVI - Green Normalized Difference Vegetation Index',
+        exg: 'ExG - Excess Green Index',
+        evi: 'EVI - Enhanced Vegetation Index',
+        savi: 'SAVI - Soil Adjusted Vegetation Index',
+        ccci: 'CCCI - Canopy Chlorophyll Content Index'
+      }
+    },
+    jobs: {
+      title: 'Job Queue',
+      empty: 'No analysis jobs yet',
+      columns: {
+        index: 'Index',
+        inputFile: 'Input File',
+        status: 'Status',
+        progress: 'Progress',
+        createdAt: 'Submitted',
+        actions: 'Actions'
+      },
+      status: {
+        pending: 'Pending',
+        running: 'Running',
+        completed: 'Completed',
+        failed: 'Failed',
+        cancelled: 'Cancelled'
+      },
+      actions: {
+        viewPng: 'Preview PNG',
+        openTif: 'Open TIF',
+        showFolder: 'Show in Folder',
+        cancel: 'Cancel',
+        delete: 'Delete'
+      },
+      result: {
+        title: 'Analysis Result Preview',
+        stats: 'Statistics',
+        min: 'Min',
+        max: 'Max',
+        mean: 'Mean',
+        std: 'Std Dev',
+        validPixels: 'Valid Pixels',
+        totalPixels: 'Total Pixels',
+        outputTif: 'Output TIF',
+        outputPng: 'Output PNG'
+      }
+    },
+    aiModel: {
+      title: 'Shennong AI Model',
+      comingSoon: 'This feature is under development',
+      description: 'Cloud-based AI analysis powered by the Shennong Agriculture AI Model, providing crop disease detection, yield prediction, and growth assessment.',
+      loadModels: 'Loading models',
+      loadFailed: 'Failed to load model list',
+      retry: 'Retry',
+      empty: 'No models available',
+      totalModels: '{count} models',
+      allTypes: 'All',
+      searchPlaceholder: 'Search model name or description...',
+      modelCode: 'Model Code',
+      modelVersion: 'Version',
+      modelType: 'Model Type',
+      inputFormat: 'Input Format',
+      outputFormat: 'Output Format',
+      callCount: 'Call Count',
+      lastCallTime: 'Last Called',
+      noLastCall: 'Never called',
+      modelDescription: 'Description',
+      runModel: 'Run Model',
+      runModelTip: 'This feature is under development, stay tuned...',
+      selectModelTip: 'Select a model from the list to view details',
+      types: {
+        classic: 'Classic',
+        'DL Model': 'Deep Learning',
+        detection: 'Detection'
+      }
+    },
+    messages: {
+      submitSuccess: 'Analysis job submitted',
+      submitFailed: 'Failed to submit job: {error}',
+      cancelSuccess: 'Job cancelled',
+      cancelFailed: 'Failed to cancel job',
+      deleteConfirm: 'Delete this job record?',
+      deleteSuccess: 'Job record deleted',
+      selectTifFirst: 'Please select a TIF image file first',
+      selectOutputFirst: 'Please select an output directory first',
+      selectIndexFirst: 'Please select a spectral index',
+      enterFormulaFirst: 'Please enter a custom formula',
+      fileNotFound: 'Output file not found, processing may not be complete yet'
+    }
   },
   calibration: {
     pythonServiceNotRunning: 'Python processing service is not running',
@@ -770,6 +888,45 @@ export default {
       alignment: {
         title: 'Image Alignment',
         content: '<p>Image alignment page is used for multi-band image alignment.</p><ul><li>Generate warp matrices</li><li>Single image alignment</li><li>Batch image alignment</li><li>Manage warp matrices and job records</li></ul><p>Alignment should be performed on radiometrically calibrated reflectance images for better results.</p><p><strong>Band alignment workflow:</strong></p><ol><li>Go to “Image Alignment” -> “Generate Warp Matrices”.</li><li>Select the 5-band reflectance TIFs generated after radiometric calibration (same capture set).</li><li>Method suggestion: RedEdge-M/MX use “opencv (ECC)”; RedEdge-P/Altum-PT can use “sift”.</li><li>Reference band: Red/RedEdge is recommended (default is OK).</li><li>Click “Compute Warp Matrices” and wait for completion.</li><li>In “Records”, set the new warp matrix as “Active”.</li><li>Go to “Batch Alignment”, choose input/output folders.</li><li>Select the active warp matrix and start.</li></ol>'
+      },
+      analysis: {
+        title: 'Image Analysis',
+        content: '<p>The Image Analysis page provides analysis tools for multispectral remote sensing imagery.</p>' +
+          '<h4>Spectral Calculator</h4>' +
+          '<p>Calculate various spectral vegetation indices from 5-band TIF images, outputting result TIF and visualization PNG files.</p>' +
+          '<p><strong>Workflow:</strong></p>' +
+          '<ol>' +
+            '<li>Select “Spectral Calculator” from the left menu.</li>' +
+            '<li>Click “Browse” to select a 5-band TIF image that has been radiometrically calibrated and band-registered.</li>' +
+            '<li>Choose index type:' +
+              '<ul>' +
+                '<li><b>Preset Index</b>: Select NDVI, NDRE, GNDVI, ExG, EVI, SAVI, or CCCI from the dropdown.</li>' +
+                '<li><b>Custom Formula</b>: Use the calculator panel to input a formula. Available variables: <code>blue</code> (475nm), <code>green</code> (560nm), <code>red</code> (668nm), <code>rededge</code> (717nm), <code>nir</code> (840nm) (case-insensitive). Supports <code>+</code> <code>-</code> <code>*</code> <code>/</code> <code>**</code> operators and functions like <code>np.sqrt()</code>, <code>np.log()</code>, <code>abs()</code>.</li>' +
+              '</ul>' +
+            '</li>' +
+            '<li>Select an output directory and specify a filename (leave blank for auto-generation).</li>' +
+            '<li>Click “Submit Analysis Job”. The task will be queued in the right panel for async processing.</li>' +
+          '</ol>' +
+          '<p><strong>Job Queue:</strong></p>' +
+          '<ul>' +
+            '<li>The right panel shows all analysis jobs with real-time status and progress.</li>' +
+            '<li>Once complete, you can preview the PNG result (with legend and statistics), open the TIF file, or reveal it in a folder.</li>' +
+            '<li>You can cancel queued jobs or delete completed records.</li>' +
+            '<li>The panel can be collapsed/expanded via the arrow button.</li>' +
+          '</ul>' +
+          '<h4>Preset Index Reference</h4>' +
+          '<table style=”width:100%;border-collapse:collapse;font-size:13px;margin-top:4px;”>' +
+            '<tr style=”background:#fafafa;”><th style=”text-align:left;padding:4px 8px;border-bottom:1px solid #eee;”>Index</th><th style=”text-align:left;padding:4px 8px;border-bottom:1px solid #eee;”>Formula</th><th style=”text-align:left;padding:4px 8px;border-bottom:1px solid #eee;”>Use Case</th></tr>' +
+            '<tr><td style=”padding:4px 8px;”>NDVI</td><td style=”padding:4px 8px;”><code>(NIR−Red)/(NIR+Red)</code></td><td style=”padding:4px 8px;”>Vegetation cover & health</td></tr>' +
+            '<tr><td style=”padding:4px 8px;”>NDRE</td><td style=”padding:4px 8px;”><code>(NIR−RE)/(NIR+RE)</code></td><td style=”padding:4px 8px;”>Chlorophyll content, more sensitive in dense canopy</td></tr>' +
+            '<tr><td style=”padding:4px 8px;”>GNDVI</td><td style=”padding:4px 8px;”><code>(NIR−Green)/(NIR+Green)</code></td><td style=”padding:4px 8px;”>Chlorophyll concentration, complements NDVI</td></tr>' +
+            '<tr><td style=”padding:4px 8px;”>ExG</td><td style=”padding:4px 8px;”><code>2G−R−B</code></td><td style=”padding:4px 8px;”>Green vegetation segmentation, weed detection</td></tr>' +
+            '<tr><td style=”padding:4px 8px;”>EVI</td><td style=”padding:4px 8px;”><code>2.5(NIR−R)/(NIR+6R−7.5B+1)</code></td><td style=”padding:4px 8px;”>Dense vegetation, reduced atmospheric interference</td></tr>' +
+            '<tr><td style=”padding:4px 8px;”>SAVI</td><td style=”padding:4px 8px;”><code>1.5(NIR−R)/(NIR+R+0.5)</code></td><td style=”padding:4px 8px;”>Vegetation analysis in high bare-soil areas</td></tr>' +
+            '<tr><td style=”padding:4px 8px;”>CCCI</td><td style=”padding:4px 8px;”><code>NDRE/NDVI</code></td><td style=”padding:4px 8px;”>Canopy chlorophyll estimation, nitrogen management</td></tr>' +
+          '</table>' +
+          '<h4>Shennong AI Model</h4>' +
+          '<p>Cloud-based AI analysis powered by the Shennong Agriculture AI Model, providing crop disease detection, yield prediction, and growth assessment. This feature is under development.</p>'
       },
       settings: {
         title: 'Settings',
