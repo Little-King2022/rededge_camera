@@ -179,6 +179,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getJobHistory: (limit) => ipcRenderer.invoke('batch:getJobHistory', limit)
   },
 
+  // Field Management APIs
+  field: {
+    getAll: () => ipcRenderer.invoke('field:getAll'),
+    create: (field) => ipcRenderer.invoke('field:create', field),
+    update: (id, updates) => ipcRenderer.invoke('field:update', { id, updates }),
+    delete: (id) => ipcRenderer.invoke('field:delete', id),
+    importGeoFile: () => ipcRenderer.invoke('field:importGeoFile')
+  },
+
   // Analysis APIs
   analysis: {
     selectTifFile: () => ipcRenderer.invoke('analysis:selectTifFile'),

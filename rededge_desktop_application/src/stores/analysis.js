@@ -8,6 +8,10 @@ export const useAnalysisStore = defineStore('analysis', () => {
   const isLoading = ref(false)
   const error = ref(null)
 
+  // Field state
+  const fields = ref([])
+  const fieldsLoading = ref(false)
+
   // AI model state
   const models = ref([])
   const modelsLoading = ref(false)
@@ -32,6 +36,50 @@ export const useAnalysisStore = defineStore('analysis', () => {
   )
 
   // Actions
+
+  // Field actions
+  async function loadFields() {
+    try {
+      fieldsLoading.value = true
+      const result = await window.electronAPI.field.getAll()
+      if (result.success) {
+        fields.value = result.fields || []
+      }
+    } catch (e) {
+      console.error('[AnalysisStore] Failed to load fields:', e)
+    } finally {
+      fieldsLoading.value = false
+    }
+  }
+
+  async function createField(field) {
+    const result = await window.electronAPI.field.create(field)
+    if (result.success) {
+      fields.value.push(result.field)
+    }
+    return result
+  }
+
+  async function updateField(id, updates) {
+    const result = await window.electronAPI.field.update(id, updates)
+    if (result.success) {
+      const idx = fields.value.findIndex(f => f.id === id)
+      if (idx !== -1) fields.value[idx] = result.field
+    }
+    return result
+  }
+
+  async function deleteField(id) {
+    const result = await window.electronAPI.field.delete(id)
+    if (result.success) {
+      fields.value = fields.value.filter(f => f.id !== id)
+    }
+    return result
+  }
+
+  async function importGeoFile() {
+    return window.electronAPI.field.importGeoFile()
+  }
 
   async function checkPythonService() {
     try {
@@ -166,6 +214,8 @@ export const useAnalysisStore = defineStore('analysis', () => {
     presets,
     isLoading,
     error,
+    fields,
+    fieldsLoading,
     models,
     modelsLoading,
     modelsError,
@@ -173,6 +223,11 @@ export const useAnalysisStore = defineStore('analysis', () => {
     pythonServiceStatus,
     sortedJobs,
     pendingJobs,
+    loadFields,
+    createField,
+    updateField,
+    deleteField,
+    importGeoFile,
     checkPythonService,
     startPythonService,
     loadPresets,

@@ -13,18 +13,43 @@
         </div>
         <a-menu
           v-model:selectedKeys="selectedKeys"
+          v-model:openKeys="openKeys"
           mode="inline"
           class="tool-menu"
         >
-          <a-menu-item key="spectral">
+          <a-sub-menu key="fieldManager">
+            <template #icon><EnvironmentOutlined /></template>
+            <template #title>{{ t('analysis.menu.fieldManager') }}</template>
+            <a-menu-item key="field_create" class="sub-menu">
+              {{ t('analysis.fieldManager.fieldCreate') }}
+            </a-menu-item>
+            <a-menu-item key="field_list" class="sub-menu">
+              {{ t('analysis.fieldManager.fieldList') }}
+            </a-menu-item>
+          </a-sub-menu>
+          <a-sub-menu key="spectralCalculator">
             <template #icon><LineChartOutlined /></template>
-            {{ t('analysis.menu.spectralCalculator') }}
-          </a-menu-item>
-          <a-menu-item key="ai">
+            <template #title>{{ t('analysis.menu.spectralCalculator') }}</template>
+            <a-menu-item key="spectral_preset" class="sub-menu">
+              {{ t('analysis.spectral.presetIndex') }}
+            </a-menu-item>
+            <a-menu-item key="spectral_custom" class="sub-menu">
+              {{ t('analysis.spectral.customIndex') }}
+            </a-menu-item>
+          </a-sub-menu>
+          <a-sub-menu key="aiModel">
             <template #icon><CloudOutlined /></template>
-            <span>{{ t('analysis.menu.aiModel') }}</span>
-            <!-- <a-tag color="blue" class="soon-tag">Soon</a-tag> -->
-          </a-menu-item>
+            <template #title>{{ t('analysis.menu.aiModel') }}</template>
+            <a-menu-item key="ai_classic" class="sub-menu">
+              {{ t('analysis.aiModel.types.classic') }}
+            </a-menu-item>
+            <a-menu-item key="ai_dl" class="sub-menu">
+              {{ t('analysis.aiModel.types.DL Model') }}
+            </a-menu-item>
+            <a-menu-item key="ai_detection" class="sub-menu">
+              {{ t('analysis.aiModel.types.detection') }}
+            </a-menu-item>
+          </a-sub-menu>
         </a-menu>
       </a-layout-sider>
 
@@ -51,8 +76,16 @@
           </template>
         </a-alert>
 
+        <!-- 地块管理 -->
+        <div v-if="isFieldCreate" class="field-area">
+          <FieldCreate @saved="handleFieldSaved" />
+        </div>
+        <div v-if="isFieldList" class="field-area">
+          <FieldList />
+        </div>
+
         <!-- 光谱计算器 -->
-        <div v-if="selectedKeys[0] === 'spectral'" class="tool-scroll-area">
+        <div v-if="isSpectralActive" class="tool-scroll-area">
           <div class="tool-form-wrapper">
             <!-- 输入影像 -->
             <a-card size="small" class="section-card">
@@ -234,7 +267,7 @@
         </div>
 
         <!-- AI 模型 -->
-        <div v-if="selectedKeys[0] === 'ai'" class="tool-scroll-area ai-section">
+        <div v-if="isAiActive" class="tool-scroll-area ai-section">
           <a-layout has-sider class="ai-layout">
             <!-- 模型列表 -->
             <a-layout-sider :width="340" class="model-list-sider" :trigger="null">
@@ -603,6 +636,7 @@ import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import {
   ExperimentOutlined,
+  EnvironmentOutlined,
   LineChartOutlined,
   CloudOutlined,
   UploadOutlined,
@@ -626,6 +660,8 @@ import {
   SendOutlined
 } from '@ant-design/icons-vue'
 import { useAnalysisStore } from '../stores/analysis'
+import FieldCreate from '../components/fieldManager/FieldCreate.vue'
+import FieldList from '../components/fieldManager/FieldList.vue'
 
 const { t } = useI18n()
 const store = useAnalysisStore()
@@ -693,7 +729,14 @@ function insertFormula(text) {
 }
 
 // --- UI state ---
-const selectedKeys = ref(['spectral'])
+const selectedKeys = ref([])
+const openKeys = ref(['fieldManager', 'spectralCalculator', 'aiModel'])
+const activeMenuKey = computed(() => selectedKeys.value[0] || '')
+const isFieldActive = computed(() => activeMenuKey.value.startsWith('field_'))
+const isFieldCreate = computed(() => activeMenuKey.value === 'field_create')
+const isFieldList = computed(() => activeMenuKey.value === 'field_list')
+const isSpectralActive = computed(() => activeMenuKey.value.startsWith('spectral_'))
+const isAiActive = computed(() => activeMenuKey.value.startsWith('ai_'))
 const jobQueueCollapsed = ref(false)
 const isStartingService = ref(false)
 const isSubmitting = ref(false)
@@ -763,13 +806,58 @@ function stopPolling() {
 
 watch(() => store.pendingJobs.length, (n) => n > 0 ? startPolling() : stopPolling())
 
-// Load AI models when switching to AI tab
+// Menu navigation <-> page switching
 let modelsLoaded = false
+const AI_MENU_TO_TYPE = {
+  ai_classic: 'classic',
+  ai_dl: 'DL Model',
+  ai_detection: 'detection'
+}
+const AI_TYPE_TO_MENU = {
+  classic: 'ai_classic',
+  'DL Model': 'ai_dl',
+  detection: 'ai_detection'
+}
+const SPECTRAL_MENU_TO_MODE = {
+  spectral_preset: 'preset',
+  spectral_custom: 'custom'
+}
+const SPECTRAL_MODE_TO_MENU = {
+  preset: 'spectral_preset',
+  custom: 'spectral_custom'
+}
+
 watch(() => selectedKeys.value[0], (key) => {
-  if (key === 'ai' && !modelsLoaded) {
-    modelsLoaded = true
-    store.loadModels()
+  if (!key) return
+
+  // Spectral sub-pages
+  const spectralMode = SPECTRAL_MENU_TO_MODE[key]
+  if (spectralMode) {
+    if (form.indexMode !== spectralMode) form.indexMode = spectralMode
+    return
   }
+
+  // AI sub-pages
+  const aiType = AI_MENU_TO_TYPE[key]
+  if (aiType) {
+    if (modelTypeFilter.value !== aiType) modelTypeFilter.value = aiType
+    if (!modelsLoaded) {
+      modelsLoaded = true
+      store.loadModels()
+    }
+  }
+}, { immediate: true })
+
+watch(() => form.indexMode, (mode) => {
+  if (!isSpectralActive.value) return
+  const nextKey = SPECTRAL_MODE_TO_MENU[mode] || 'spectral_preset'
+  if (selectedKeys.value[0] !== nextKey) selectedKeys.value = [nextKey]
+})
+
+watch(modelTypeFilter, (type) => {
+  if (!isAiActive.value) return
+  const nextKey = AI_TYPE_TO_MENU[type]
+  if (nextKey && selectedKeys.value[0] !== nextKey) selectedKeys.value = [nextKey]
 })
 
 onMounted(async () => {
@@ -876,6 +964,11 @@ function handleRunModel() {
   message.info(t('analysis.aiModel.runModelTip'))
 }
 
+function handleFieldSaved() {
+  // Switch to field list after saving
+  selectedKeys.value = ['field_list']
+}
+
 // --- Helpers ---
 function statusColor(s) {
   return { pending: 'default', running: 'processing', completed: 'success', failed: 'error', cancelled: 'warning' }[s] || 'default'
@@ -923,7 +1016,7 @@ function formatTime(d) {
 
 .sider-title {
   padding: 16px 16px 14px;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: #1d1d1d;
   border-bottom: 1px solid #f0f0f0;
@@ -933,7 +1026,7 @@ function formatTime(d) {
 }
 
 .sider-title-icon {
-  font-size: 16px;
+  font-size: 18px;
   color: #1890ff;
 }
 
@@ -941,6 +1034,13 @@ function formatTime(d) {
   flex: 1;
   border-right: none !important;
   padding: 4px 0;
+  font-weight: 600;
+}
+
+.tool-menu :deep(.ant-menu-item) {
+  /* padding-left: 36ch; */
+  font-size: 15px;
+  font-weight: normal;
 }
 
 .soon-tag {
@@ -962,6 +1062,11 @@ function formatTime(d) {
 
 .service-alert {
   flex-shrink: 0;
+}
+
+.field-area {
+  flex: 1;
+  overflow: hidden;
 }
 
 .tool-scroll-area {

@@ -51,7 +51,9 @@ const store = new Store({
     // 批处理任务记录
     batch_jobs: [],
     // 光谱分析任务记录
-    analysis_jobs: []
+    analysis_jobs: [],
+    // 地块记录
+    field_records: []
   }
 })
 
@@ -764,6 +766,51 @@ class DatabaseService {
     const jobs = this.getAllAnalysisJobs()
     const filtered = jobs.filter(j => j.id !== id)
     this.store.set('analysis_jobs', filtered)
+  }
+
+  // ========== Field Records ==========
+  getAllFields() {
+    return this.store.get('field_records', [])
+  }
+
+  getField(id) {
+    return this.getAllFields().find(f => f.id === id) || null
+  }
+
+  createField(field) {
+    const id = this._getNextId('field_records')
+    const now = new Date().toISOString()
+    const newField = {
+      id,
+      fieldNumber: field.fieldNumber || '',
+      name: field.name || '',
+      area: field.area || 0,
+      coordinates: field.coordinates || [],
+      center: field.center || null,
+      cropType: field.cropType || '',
+      cropVariety: field.cropVariety || '',
+      notes: field.notes || '',
+      createdAt: now,
+      updatedAt: now
+    }
+    const fields = this.getAllFields()
+    fields.push(newField)
+    this.store.set('field_records', fields)
+    return newField
+  }
+
+  updateField(id, updates) {
+    const fields = this.getAllFields()
+    const idx = fields.findIndex(f => f.id === id)
+    if (idx === -1) return null
+    fields[idx] = { ...fields[idx], ...updates, updatedAt: new Date().toISOString() }
+    this.store.set('field_records', fields)
+    return fields[idx]
+  }
+
+  deleteField(id) {
+    const fields = this.getAllFields()
+    this.store.set('field_records', fields.filter(f => f.id !== id))
   }
 
   close() {

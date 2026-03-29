@@ -30,11 +30,16 @@ protocol.registerSchemesAsPrivileged([
   }
 ])
 
-if (process.env.REDEDGE_DISABLE_HW_ACCELERATION === '1' || (isDev && process.env.REDEDGE_DISABLE_HW_ACCELERATION !== '0')) {
+if (process.env.REDEDGE_DISABLE_HW_ACCELERATION === '1') {
   app.disableHardwareAcceleration()
-  app.commandLine.appendSwitch('disable-gpu');
-  app.commandLine.appendSwitch('disable-gpu-compositing');
+  app.commandLine.appendSwitch('disable-gpu')
+  app.commandLine.appendSwitch('disable-gpu-compositing')
   console.log('[Main] Hardware acceleration disabled')
+} else {
+  // Optimize WebGL performance for map controls
+  app.commandLine.appendSwitch('ignore-gpu-blocklist')
+  app.commandLine.appendSwitch('enable-gpu-rasterization')
+  app.commandLine.appendSwitch('disable-gpu-driver-bug-workarounds')
 }
 
 const crashDumpsDir = path.join(app.getPath('userData'), 'crashDumps')

@@ -1106,6 +1106,110 @@ export function registerIPCHandlers() {
     }
   })
 
+  // ========== Field Management Handlers ==========
+
+  ipcMain.handle('field:getAll', async () => {
+    return { success: true, fields: database.getAllFields() }
+  })
+
+  ipcMain.handle('field:create', async (event, field) => {
+    try {
+      const newField = database.createField(field)
+      return { success: true, field: newField }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  })
+
+  ipcMain.handle('field:update', async (event, { id, updates }) => {
+    try {
+      const updated = database.updateField(id, updates)
+      if (!updated) return { success: false, error: 'Field not found' }
+      return { success: true, field: updated }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  })
+
+  ipcMain.handle('field:delete', async (event, id) => {
+    try {
+      database.deleteField(id)
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  })
+
+  ipcMain.handle('field:importGeoFile', async () => {
+    try {
+      const mainWindow = BrowserWindow.getAllWindows()[0]
+      const result = await dialog.showOpenDialog(mainWindow, {
+        title: 'Import Geo File',
+        filters: [
+          { name: 'Geo Files', extensions: ['geojson', 'json', 'zip', 'shp'] }
+        ],
+        properties: ['openFile']
+      })
+      if (result.canceled || result.filePaths.length === 0) {
+        return { success: false, cancelled: true }
+      }
+
+      const filePath = result.filePaths[0]
+      const ext = path.extname(filePath).toLowerCase()
+
+      let geojson
+      if (ext === '.geojson' || ext === '.json') {
+        const content = await fs.readFile(filePath, 'utf-8')
+        geojson = JSON.parse(content)
+      } else if (ext === '.zip') {
+        const shp = await import('shpjs')
+        const buffer = await fs.readFile(filePath)
+        geojson = await shp.default(buffer)
+      } else if (ext === '.shp') {
+        // Try to load .shp + .dbf from same directory via shpjs zip approach
+        // shpjs expects a buffer of a zip or a URL; for standalone .shp we read raw
+        const shp = await import('shpjs')
+        const buffer = await fs.readFile(filePath)
+        geojson = await shp.default(buffer)
+      } else {
+        return { success: false, error: 'Unsupported file format' }
+      }
+
+      // Normalize to FeatureCollection
+      if (geojson.type === 'Feature') {
+        geojson = { type: 'FeatureCollection', features: [geojson] }
+      } else if (geojson.type !== 'FeatureCollection') {
+        // May be a Geometry directly
+        geojson = { type: 'FeatureCollection', features: [{ type: 'Feature', geometry: geojson, properties: {} }] }
+      }
+
+      // Extract polygons
+      const polygons = []
+      for (const feature of geojson.features) {
+        const geom = feature.geometry
+        if (!geom) continue
+        if (geom.type === 'Polygon') {
+          polygons.push({
+            coordinates: geom.coordinates[0].map(c => [c[0], c[1]]),
+            properties: feature.properties || {}
+          })
+        } else if (geom.type === 'MultiPolygon') {
+          for (const poly of geom.coordinates) {
+            polygons.push({
+              coordinates: poly[0].map(c => [c[0], c[1]]),
+              properties: feature.properties || {}
+            })
+          }
+        }
+      }
+
+      return { success: true, polygons, filePath }
+    } catch (error) {
+      console.error('[IPC] field:importGeoFile error:', error)
+      return { success: false, error: error.message }
+    }
+  })
+
   // ========== System Info Handlers ==========
 
   // CPU使用率计算（需要在两次调用之间计算差值）
