@@ -24,7 +24,7 @@
               {{ t('analysis.fieldManager.fieldCreate') }}
             </a-menu-item>
             <a-menu-item key="field_list" class="sub-menu">
-              {{ t('analysis.fieldManager.fieldList') }}
+              {{ t('analysis.fieldManager.fieldManage') }}
             </a-menu-item>
           </a-sub-menu>
           <a-sub-menu key="spectralCalculator">
@@ -81,7 +81,7 @@
           <FieldCreate @saved="handleFieldSaved" />
         </div>
         <div v-if="isFieldList" class="field-area">
-          <FieldList />
+          <FieldList ref="fieldListRef" />
         </div>
 
         <!-- 光谱计算器 -->
@@ -420,7 +420,7 @@
         </div>
       </a-layout-content>
 
-      <!-- ===== 右侧任务队列 ===== -->
+      <!-- ===== 右侧面板：地块列表 / 任务队列 ===== -->
       <a-layout-sider
         v-model:collapsed="jobQueueCollapsed"
         :width="320"
@@ -430,137 +430,233 @@
         :trigger="null"
         class="right-sider"
       >
-        <!-- 折叠态：竖向图标条 -->
-        <div v-if="jobQueueCollapsed" class="collapsed-strip" @click="jobQueueCollapsed = false">
-          <a-badge :count="store.pendingJobs.length" :offset="[6, 0]">
-            <UnorderedListOutlined class="collapsed-icon" />
-          </a-badge>
-          <span class="collapsed-label">{{ t('analysis.jobs.title') }}</span>
-        </div>
-
-        <!-- 展开态：完整队列面板 -->
-        <template v-else>
-          <div class="queue-panel">
-            <!-- 头部 -->
-            <div class="queue-header">
-              <span class="queue-title">
-                {{ t('analysis.jobs.title') }}
-                <a-badge
-                  v-if="store.pendingJobs.length > 0"
-                  :count="store.pendingJobs.length"
-                  class="queue-badge"
-                />
-              </span>
-              <a-space :size="4">
-                <a-button size="small" type="text" @click="handleRefreshJobs" :loading="store.isLoading">
-                  <template #icon><ReloadOutlined /></template>
-                </a-button>
-                <a-button size="small" type="text" @click="jobQueueCollapsed = true">
-                  <template #icon><RightOutlined /></template>
-                </a-button>
-              </a-space>
-            </div>
-
-            <!-- 任务列表 -->
-            <div class="queue-body">
-              <div v-if="store.sortedJobs.length === 0" class="queue-empty">
-                <InboxOutlined class="empty-icon" />
-                <p>{{ t('analysis.jobs.empty') }}</p>
-              </div>
-
-              <div v-else class="job-list">
-                <div
-                  v-for="job in store.sortedJobs"
-                  :key="job.id"
-                  class="job-card"
-                  :class="`job-${job.status}`"
-                >
-                  <!-- 第一行：状态 + 指数名 -->
-                  <div class="job-row-main">
-                    <a-tag :color="statusColor(job.status)" size="small">
-                      {{ t(`analysis.jobs.status.${job.status}`) }}
-                    </a-tag>
-                    <span class="job-name">{{ job.index_name || job.index_type?.toUpperCase() }}</span>
-                  </div>
-
-                  <!-- 自定义公式 -->
-                  <div v-if="job.custom_formula" class="job-formula">
-                    <code>{{ job.custom_formula }}</code>
-                  </div>
-
-                  <!-- 文件名 + 时间 -->
-                  <div class="job-meta">
-                    <span class="job-file" :title="job.tif_path">
-                      <FileImageOutlined />
-                      {{ getBasename(job.tif_path) }}
-                    </span>
-                    <span class="job-time">{{ formatTime(job.created_at) }}</span>
-                  </div>
-
-                  <!-- 进度条 -->
-                  <a-progress
-                    v-if="job.status === 'running' || job.status === 'pending'"
-                    :percent="job.progress || 0"
-                    :status="job.status === 'running' ? 'active' : 'normal'"
+        <!-- ===== 地块管理模式：显示地块列表 ===== -->
+        <template v-if="isFieldActive">
+          <!-- 折叠态 -->
+          <div v-if="jobQueueCollapsed" class="collapsed-strip" @click="jobQueueCollapsed = false">
+            <EnvironmentOutlined class="collapsed-icon" />
+            <span class="collapsed-label">{{ t('analysis.fieldManager.fieldList') }}</span>
+          </div>
+          <!-- 展开态 -->
+          <template v-else>
+            <div class="queue-panel">
+              <div class="queue-header">
+                <span class="queue-title">
+                  {{ t('analysis.fieldManager.fieldList') }}
+                  <!-- <a-badge
+                    v-if="store.fields.length > 0"
+                    :count="store.fields.length"
+                    class="queue-badge"
+                  /> -->
+                </span>
+                <a-space :size="4">
+                  <a-button
+                    v-if="fieldEditingId"
                     size="small"
-                    :stroke-width="4"
-                    class="job-progress"
-                  />
-
-                  <!-- 错误信息 -->
-                  <a-alert
-                    v-if="job.status === 'failed' && job.error_message"
-                    type="error"
-                    :message="job.error_message"
-                    show-icon
-                    class="job-alert"
-                    :style="{ fontSize: '11px' }"
-                  />
-
-                  <!-- 操作按钮 -->
-                  <div class="job-toolbar">
-                    <template v-if="job.status === 'completed' && job.result">
-                      <a-tooltip :title="t('analysis.jobs.actions.viewPng')">
-                        <a-button type="text" size="small" @click="handleViewPng(job)">
-                          <PictureOutlined />
+                    type="primary"
+                    @click="handleFinishFieldEdit"
+                  >
+                    <template #icon><CheckOutlined /></template>
+                    {{ t('analysis.field.finishEdit') }}
+                  </a-button>
+                  <a-button size="small" type="text" @click="handleRefreshFields" :loading="store.fieldsLoading">
+                    <template #icon><ReloadOutlined /></template>
+                  </a-button>
+                  <a-button size="small" type="text" @click="jobQueueCollapsed = true">
+                    <template #icon><RightOutlined /></template>
+                  </a-button>
+                </a-space>
+              </div>
+              <div class="queue-body">
+                <div v-if="store.fields.length === 0" class="queue-empty">
+                  <EnvironmentOutlined class="empty-icon" />
+                  <p>{{ t('analysis.field.emptyList') }}</p>
+                </div>
+                <div v-else class="job-list">
+                  <div
+                    v-for="field in store.fields"
+                    :key="field.id"
+                    class="job-card field-card"
+                    :class="{
+                      'field-card-selected': fieldSelectedId === field.id,
+                      'field-card-editing': fieldEditingId === field.id
+                    }"
+                    @click="handleFieldClick(field)"
+                  >
+                    <div class="field-card-header">
+                      <span class="field-card-name">
+                        {{ field.name || field.fieldNumber || t('analysis.field.unnamed') }}
+                      </span>
+                      <span class="field-card-area">{{ formatFieldArea(field.area) }}</span>
+                    </div>
+                    <div class="field-card-meta">
+                      <span v-if="field.fieldNumber" class="field-meta-tag">{{ field.fieldNumber }}</span>
+                      <span v-if="field.cropType" class="field-meta-tag">{{ field.cropType }}</span>
+                      <span v-if="field.cropVariety" class="field-meta-tag field-meta-crop">{{ field.cropVariety }}</span>
+                    </div>
+                    <div class="field-card-time">{{ formatTime(field.createdAt) }}</div>
+                    <div class="field-card-actions" @click.stop>
+                      <a-tooltip v-if="isFieldList" :title="t('analysis.field.editVertices')">
+                        <a-button type="text" size="small" @click="handleStartFieldEditCoords(field)">
+                          <template #icon><AimOutlined /></template>
                         </a-button>
                       </a-tooltip>
-                      <a-tooltip title="TIF">
-                        <a-button type="text" size="small" @click="store.openOutputFile(job.result.tif_path)">
-                          <FileOutlined />
+                      <a-tooltip :title="t('analysis.field.editAttributes')">
+                        <a-button type="text" size="small" @click="handleOpenFieldEditForm(field)">
+                          <template #icon><EditOutlined /></template>
                         </a-button>
                       </a-tooltip>
-                      <a-tooltip :title="t('analysis.jobs.actions.showFolder')">
-                        <a-button type="text" size="small" @click="store.showInFolder(job.result.tif_path)">
-                          <FolderOpenOutlined />
+                      <a-popconfirm
+                        :title="t('analysis.field.deleteConfirm')"
+                        @confirm="handleDeleteField(field.id)"
+                        placement="left"
+                      >
+                        <a-button type="text" size="small" danger>
+                          <DeleteOutlined />
                         </a-button>
-                      </a-tooltip>
-                    </template>
-                    <div class="toolbar-spacer" />
-                    <a-button
-                      v-if="job.status === 'pending' || job.status === 'running'"
-                      type="text"
-                      size="small"
-                      danger
-                      @click="handleCancelJob(job)"
-                    >
-                      <CloseOutlined />
-                    </a-button>
-                    <a-popconfirm
-                      v-if="['completed', 'failed', 'cancelled'].includes(job.status)"
-                      :title="t('analysis.messages.deleteConfirm')"
-                      @confirm="handleDeleteJob(job)"
-                      placement="left"
-                    >
-                      <a-button type="text" size="small">
-                        <DeleteOutlined />
-                      </a-button>
-                    </a-popconfirm>
+                      </a-popconfirm>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+          </template>
+        </template>
+
+        <!-- ===== 其他模式：显示任务队列 ===== -->
+        <template v-else>
+          <!-- 折叠态：竖向图标条 -->
+          <div v-if="jobQueueCollapsed" class="collapsed-strip" @click="jobQueueCollapsed = false">
+            <a-badge :count="store.pendingJobs.length" :offset="[6, 0]">
+              <UnorderedListOutlined class="collapsed-icon" />
+            </a-badge>
+            <span class="collapsed-label">{{ t('analysis.jobs.title') }}</span>
           </div>
+
+          <!-- 展开态：完整队列面板 -->
+          <template v-else>
+            <div class="queue-panel">
+              <!-- 头部 -->
+              <div class="queue-header">
+                <span class="queue-title">
+                  {{ t('analysis.jobs.title') }}
+                  <a-badge
+                    v-if="store.pendingJobs.length > 0"
+                    :count="store.pendingJobs.length"
+                    class="queue-badge"
+                  />
+                </span>
+                <a-space :size="4">
+                  <a-button size="small" type="text" @click="handleRefreshJobs" :loading="store.isLoading">
+                    <template #icon><ReloadOutlined /></template>
+                  </a-button>
+                  <a-button size="small" type="text" @click="jobQueueCollapsed = true">
+                    <template #icon><RightOutlined /></template>
+                  </a-button>
+                </a-space>
+              </div>
+
+              <!-- 任务列表 -->
+              <div class="queue-body">
+                <div v-if="store.sortedJobs.length === 0" class="queue-empty">
+                  <InboxOutlined class="empty-icon" />
+                  <p>{{ t('analysis.jobs.empty') }}</p>
+                </div>
+
+                <div v-else class="job-list">
+                  <div
+                    v-for="job in store.sortedJobs"
+                    :key="job.id"
+                    class="job-card"
+                    :class="`job-${job.status}`"
+                  >
+                    <!-- 第一行：状态 + 指数名 -->
+                    <div class="job-row-main">
+                      <a-tag :color="statusColor(job.status)" size="small">
+                        {{ t(`analysis.jobs.status.${job.status}`) }}
+                      </a-tag>
+                      <span class="job-name">{{ job.index_name || job.index_type?.toUpperCase() }}</span>
+                    </div>
+
+                    <!-- 自定义公式 -->
+                    <div v-if="job.custom_formula" class="job-formula">
+                      <code>{{ job.custom_formula }}</code>
+                    </div>
+
+                    <!-- 文件名 + 时间 -->
+                    <div class="job-meta">
+                      <span class="job-file" :title="job.tif_path">
+                        <FileImageOutlined />
+                        {{ getBasename(job.tif_path) }}
+                      </span>
+                      <span class="job-time">{{ formatTime(job.created_at) }}</span>
+                    </div>
+
+                    <!-- 进度条 -->
+                    <a-progress
+                      v-if="job.status === 'running' || job.status === 'pending'"
+                      :percent="job.progress || 0"
+                      :status="job.status === 'running' ? 'active' : 'normal'"
+                      size="small"
+                      :stroke-width="4"
+                      class="job-progress"
+                    />
+
+                    <!-- 错误信息 -->
+                    <a-alert
+                      v-if="job.status === 'failed' && job.error_message"
+                      type="error"
+                      :message="job.error_message"
+                      show-icon
+                      class="job-alert"
+                      :style="{ fontSize: '11px' }"
+                    />
+
+                    <!-- 操作按钮 -->
+                    <div class="job-toolbar">
+                      <template v-if="job.status === 'completed' && job.result">
+                        <a-tooltip :title="t('analysis.jobs.actions.viewPng')">
+                          <a-button type="text" size="small" @click="handleViewPng(job)">
+                            <PictureOutlined />
+                          </a-button>
+                        </a-tooltip>
+                        <a-tooltip title="TIF">
+                          <a-button type="text" size="small" @click="store.openOutputFile(job.result.tif_path)">
+                            <FileOutlined />
+                          </a-button>
+                        </a-tooltip>
+                        <a-tooltip :title="t('analysis.jobs.actions.showFolder')">
+                          <a-button type="text" size="small" @click="store.showInFolder(job.result.tif_path)">
+                            <FolderOpenOutlined />
+                          </a-button>
+                        </a-tooltip>
+                      </template>
+                      <div class="toolbar-spacer" />
+                      <a-button
+                        v-if="job.status === 'pending' || job.status === 'running'"
+                        type="text"
+                        size="small"
+                        danger
+                        @click="handleCancelJob(job)"
+                      >
+                        <CloseOutlined />
+                      </a-button>
+                      <a-popconfirm
+                        v-if="['completed', 'failed', 'cancelled'].includes(job.status)"
+                        :title="t('analysis.messages.deleteConfirm')"
+                        @confirm="handleDeleteJob(job)"
+                        placement="left"
+                      >
+                        <a-button type="text" size="small">
+                          <DeleteOutlined />
+                        </a-button>
+                      </a-popconfirm>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
         </template>
       </a-layout-sider>
     </a-layout>
@@ -627,11 +723,51 @@
         </div>
       </div>
     </a-modal>
+
+    <!-- ===== 地块属性编辑弹窗 ===== -->
+    <a-modal
+      v-model:open="fieldEditModalVisible"
+      :title="t('analysis.field.editAttributes')"
+      @ok="handleFieldEditSave"
+      :ok-text="t('common.save')"
+      :cancel-text="t('common.cancel')"
+      width="480px"
+    >
+      <a-form layout="vertical" v-if="fieldEditForm">
+        <a-row :gutter="12">
+          <a-col :span="12">
+            <a-form-item :label="t('analysis.field.fieldNumber')">
+              <a-input v-model:value="fieldEditForm.fieldNumber" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item :label="t('analysis.field.fieldName')">
+              <a-input v-model:value="fieldEditForm.name" />
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-row :gutter="12">
+          <a-col :span="12">
+            <a-form-item :label="t('analysis.field.cropType')">
+              <a-input v-model:value="fieldEditForm.cropType" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item :label="t('analysis.field.cropVariety')">
+              <a-input v-model:value="fieldEditForm.cropVariety" />
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-form-item :label="t('analysis.field.notes')">
+          <a-textarea v-model:value="fieldEditForm.notes" :auto-size="{ minRows: 2, maxRows: 4 }" />
+        </a-form-item>
+      </a-form>
+    </a-modal>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import {
@@ -657,7 +793,10 @@ import {
   DeleteOutlined,
   SearchOutlined,
   WarningOutlined,
-  SendOutlined
+  SendOutlined,
+  AimOutlined,
+  EditOutlined,
+  CheckOutlined
 } from '@ant-design/icons-vue'
 import { useAnalysisStore } from '../stores/analysis'
 import FieldCreate from '../components/fieldManager/FieldCreate.vue'
@@ -667,6 +806,14 @@ const { t } = useI18n()
 const store = useAnalysisStore()
 
 const formulaRef = ref(null)
+const fieldListRef = ref(null)
+
+// --- Field list panel state ---
+const fieldSelectedId = ref(null)
+const fieldEditingId = ref(null)
+const fieldEditModalVisible = ref(false)
+const fieldEditForm = ref(null)
+const fieldEditFormId = ref(null)
 
 // --- Calculator buttons ---
 const BAND_BUTTONS = [
@@ -827,8 +974,15 @@ const SPECTRAL_MODE_TO_MENU = {
   custom: 'spectral_custom'
 }
 
+let fieldsLoaded = false
 watch(() => selectedKeys.value[0], (key) => {
   if (!key) return
+
+  // Field manager sub-pages: load fields on first enter
+  if (key.startsWith('field_') && !fieldsLoaded) {
+    fieldsLoaded = true
+    store.loadFields()
+  }
 
   // Spectral sub-pages
   const spectralMode = SPECTRAL_MENU_TO_MODE[key]
@@ -847,6 +1001,14 @@ watch(() => selectedKeys.value[0], (key) => {
     }
   }
 }, { immediate: true })
+
+// Sync FieldList editing/selection state back to the right sider
+watch(() => fieldListRef.value?.editingFieldId, (val) => {
+  fieldEditingId.value = val || null
+})
+watch(() => fieldListRef.value?.selectedFieldId, (val) => {
+  fieldSelectedId.value = val || null
+})
 
 watch(() => form.indexMode, (mode) => {
   if (!isSpectralActive.value) return
@@ -967,6 +1129,78 @@ function handleRunModel() {
 function handleFieldSaved() {
   // Switch to field list after saving
   selectedKeys.value = ['field_list']
+}
+
+async function handleRefreshFields() {
+  await store.loadFields()
+}
+
+function handleFieldClick(field) {
+  if (fieldEditingId.value) return
+  fieldSelectedId.value = field.id
+  // Only interact with map when FieldList is visible
+  if (isFieldList.value && fieldListRef.value) {
+    fieldListRef.value.selectField(field)
+  }
+}
+
+function handleStartFieldEditCoords(field) {
+  if (!isFieldList.value || !fieldListRef.value) return
+  fieldEditingId.value = field.id
+  fieldSelectedId.value = field.id
+  fieldListRef.value.startEditCoords(field)
+}
+
+async function handleFinishFieldEdit() {
+  if (!fieldListRef.value) return
+  await fieldListRef.value.finishEdit()
+  fieldEditingId.value = null
+}
+
+function handleOpenFieldEditForm(field) {
+  fieldEditFormId.value = field.id
+  fieldEditForm.value = reactive({
+    fieldNumber: field.fieldNumber || '',
+    name: field.name || '',
+    cropType: field.cropType || '',
+    cropVariety: field.cropVariety || '',
+    notes: field.notes || ''
+  })
+  fieldEditModalVisible.value = true
+}
+
+async function handleFieldEditSave() {
+  if (!fieldEditForm.value || !fieldEditFormId.value) return
+  const result = await store.updateField(fieldEditFormId.value, {
+    fieldNumber: fieldEditForm.value.fieldNumber,
+    name: fieldEditForm.value.name,
+    cropType: fieldEditForm.value.cropType,
+    cropVariety: fieldEditForm.value.cropVariety,
+    notes: fieldEditForm.value.notes
+  })
+  if (result.success) {
+    message.success(t('analysis.field.attrUpdated'))
+    fieldEditModalVisible.value = false
+  } else {
+    message.error(t('analysis.field.updateFailed'))
+  }
+}
+
+async function handleDeleteField(id) {
+  if (fieldListRef.value) {
+    await fieldListRef.value.handleDelete(id)
+  } else {
+    const result = await store.deleteField(id)
+    if (result.success) message.success(t('analysis.field.deleteSuccess'))
+  }
+  if (fieldSelectedId.value === id) fieldSelectedId.value = null
+  if (fieldEditingId.value === id) fieldEditingId.value = null
+}
+
+function formatFieldArea(area) {
+  if (!area || area <= 0) return '--'
+  if (area >= 10000) return `${(area / 10000).toFixed(2)} ha`
+  return `${area.toFixed(1)} m²`
 }
 
 // --- Helpers ---
@@ -1413,7 +1647,7 @@ function formatTime(d) {
 }
 
 .job-card:hover {
-  border-color: #d9d9d9;
+  border-color: #1890ff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
@@ -1661,7 +1895,7 @@ function formatTime(d) {
   color: #888;
   line-height: 1.5;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   margin-bottom: 6px;
@@ -1819,5 +2053,79 @@ function formatTime(d) {
   font-weight: 500;
   height: 44px;
   margin-top: 8px;
+}
+
+/* ===== Field list cards in right sider ===== */
+.field-card {
+  border-left: 3px solid #52c41a;
+  cursor: pointer;
+}
+
+.field-card-selected {
+  border-left-color: #1890ff;
+  background: #e6f4ff !important;
+}
+
+.field-card-editing {
+  border-left-color: #faad14;
+  background: #fffbe6 !important;
+}
+
+.field-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.field-card-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: #333;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field-card-area {
+  font-size: 12px;
+  color: #1890ff;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.field-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.field-meta-tag {
+  font-size: 11px;
+  padding: 0 6px;
+  background: #f5f5f5;
+  border-radius: 3px;
+  color: #666;
+  line-height: 20px;
+}
+
+.field-meta-crop {
+  background: #f6ffed;
+  color: #389e0d;
+}
+
+.field-card-time {
+  font-size: 12px;
+  color: #999999;
+  margin-bottom: 4px;
+}
+
+.field-card-actions {
+  display: flex;
+  gap: 2px;
+  padding-top: 4px;
+  border-top: 1px solid #f5f5f5;
 }
 </style>

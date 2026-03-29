@@ -81,7 +81,7 @@
           :ghost="satelliteMode"
           @click="toggleSatellite"
         >
-          <template #icon><GlobalOutlined /></template>
+          <!-- <template #icon><GlobalOutlined /></template> -->
           {{ satelliteMode ? t('analysis.field.normalMap') : t('analysis.field.satelliteMap') }}
         </a-button>
       </div>
@@ -813,6 +813,12 @@ function formatArea(area) {
   bottom: 10px;
   z-index: 10;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
+}
+
+.satellite-toggle:hover {
+  background: rgba(255, 255, 255, 0.9) !important;
 }
 
 /* ===== Form section ===== */

@@ -457,8 +457,8 @@ export default {
     serviceStarted: 'Python service started successfully',
     serviceStartFailed: 'Failed to start Python service',
     fieldManager: {
-      fieldList: 'Field List',
       fieldCreate: 'Create Field',
+      fieldList: 'Field Manage',
     },
     field: {
       drawPolygon: 'Draw Field',

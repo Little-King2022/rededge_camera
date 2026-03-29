@@ -457,8 +457,9 @@
     serviceStarted: 'Python 服务启动成功',
     serviceStartFailed: 'Python 服务启动失败',
     fieldManager: {
-      fieldList: '地块列表',
       fieldCreate: '创建地块',
+      fieldList: '地块列表',
+      fieldManage: '地块管理'
     },
     field: {
       drawPolygon: '绘制地块',
@@ -597,8 +598,8 @@
       runModelTip: '该功能正在开发中，敬请期待...',
       selectModelTip: '请从左侧列表选择一个模型查看详情',
       types: {
-        classic: '经典算法',
-        'DL Model': '深度学习',
+        classic: '常规模型',
+        'DL Model': '深度学习模型',
         detection: '检测模型'
       }
     },
