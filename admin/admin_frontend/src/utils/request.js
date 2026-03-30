@@ -53,33 +53,37 @@ request.interceptors.response.use(
       const { status, data } = error.response
 
       switch (status) {
-        case 401:
+        case 401: {
           message.error('未授权，请重新登录')
-          // 清除 Token
           localStorage.removeItem('access_token')
           localStorage.removeItem('user_info')
-          // 跳转到登录页，只携带路径部分
-          const redirectUrl = encodeURIComponent(window.location.pathname + window.location.search)
-          window.location.replace(`/login?redirect=${redirectUrl}`)
+          // 已在登录页时不再重定向，避免循环
+          if (!window.location.pathname.startsWith('/login')) {
+            const redirectUrl = encodeURIComponent(window.location.pathname + window.location.search)
+            window.location.replace(`/login?redirect=${redirectUrl}`)
+          }
           break
+        }
         case 403:
           message.error('没有权限访问')
           break
         case 404:
           message.error('请求的资源不存在')
           break
-        case 422:
+        case 422: {
           // JWT验证失败或请求参数错误
           const errorMsg = data?.msg || data?.error || data?.message || 'Token验证失败'
           message.error(errorMsg)
           if (errorMsg.includes('token') || errorMsg.includes('Token') || errorMsg.includes('expired')) {
-            // Token 相关错误，跳转登录页
             localStorage.removeItem('access_token')
             localStorage.removeItem('user_info')
-            const redirectUrl2 = encodeURIComponent(window.location.pathname + window.location.search)
-            window.location.replace(`/login?redirect=${redirectUrl2}`)
+            if (!window.location.pathname.startsWith('/login')) {
+              const redirectUrl2 = encodeURIComponent(window.location.pathname + window.location.search)
+              window.location.replace(`/login?redirect=${redirectUrl2}`)
+            }
           }
           break
+        }
         case 429:
           message.error('请求过于频繁，请稍后再试')
           break

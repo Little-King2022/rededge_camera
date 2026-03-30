@@ -1,7 +1,7 @@
 {
-  "name": "rededge-desktop-application",
-  "version": "1.1.0",
-  "description": "RedEdge-M Remote Sensing Monitoring Desktop Application",
+  "name": "crop-monitor-desktop",
+  "version": "1.2.0",
+  "description": "Crop low-altitude monitoring terminal",
   "main": "electron/main.js",
   "type": "module",
   "scripts": {
@@ -15,7 +15,8 @@
   "keywords": [
     "electron",
     "vue",
-    "rededge",
+    "crop-monitor",
+    "rededge-camera",
     "remote-sensing"
   ],
   "author": "",

@@ -57,11 +57,13 @@ import { ref, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { useAuthStore } from '@/stores/auth'
+import { useSystemStore } from '@/stores/system'
 import { UserOutlined, LockOutlined } from '@ant-design/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+const systemStore = useSystemStore()
 
 const loading = ref(false)
 const formState = reactive({
@@ -82,6 +84,7 @@ const handleLogin = async () => {
 
     if (result.success) {
       message.success('登录成功')
+      systemStore.fetchSettings()
 
       // 处理 redirect 参数
       let redirect = route.query.redirect

@@ -97,9 +97,21 @@ router.beforeEach((to, from, next) => {
     document.title = siteName
   }
 
+  const isLoggedIn = authStore.isLoggedIn
+
+  // 优先处理登录页，避免因 meta 判断异常导致循环重定向
+  if (to.name === 'Login') {
+    if (isLoggedIn) {
+      next({ name: 'Dashboard' })
+    } else {
+      next()
+    }
+    return
+  }
+
   // 检查是否需要认证（只有明确设置 requiresAuth: false 才不需要认证）
   if (to.meta.requiresAuth !== false) {
-    if (!authStore.isLoggedIn) {
+    if (!isLoggedIn) {
       next({ name: 'Login', query: { redirect: to.fullPath } })
       return
     }
@@ -110,12 +122,6 @@ router.beforeEach((to, from, next) => {
         next({ name: 'Dashboard' })
         return
       }
-    }
-  } else {
-    // 已登录用户访问登录页，重定向到仪表盘
-    if (to.name === 'Login' && authStore.isLoggedIn) {
-      next({ name: 'Dashboard' })
-      return
     }
   }
 
